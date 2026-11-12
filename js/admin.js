@@ -11,11 +11,15 @@
   const nameEl = document.getElementById("server-name");
   const params = new URLSearchParams(window.location.search);
   const sid = params.get("server");
-  const storedName = localStorage.getItem("mc-panel-name");
-  nameEl.textContent = storedName || serverNames[sid] || "我的服务器";
+  nameEl.textContent = "加载中…";
+  window.api("/api/servers/" + encodeURIComponent(sid))
+    .then((r) => r.json())
+    .then((s) => { if (s && s.name) nameEl.textContent = s.name; })
+    .catch(() => { nameEl.textContent = "我的服务器"; });
   nameEl.addEventListener("blur", () => {
-    localStorage.setItem("mc-panel-name", nameEl.textContent.trim() || "我的服务器");
-    nameEl.textContent = localStorage.getItem("mc-panel-name");
+    const name = nameEl.textContent.trim() || "我的服务器";
+    nameEl.textContent = name;
+    window.api("/api/servers/" + encodeURIComponent(sid), { method: "PUT", body: JSON.stringify({ name }) }).catch(() => {});
   });
   nameEl.addEventListener("keydown", (e) => {
     if (e.key === "Enter") {
@@ -67,23 +71,34 @@
     termStatus.textContent = text;
   }
 
-  const seedLogs = [
-    { t: "info", m: "正在加载核心 …" },
-    { t: "info", m: "Paper 1.21.1 启动完成" },
-    { t: "info", m: "世界 \"world\" 已加载 (3 个维度)" },
-    { t: "warn", m: "服务器版本落后，建议更新核心端" },
-    { t: "info", m: "RCON 已监听 0.0.0.0:25575" },
-    { t: "info", m: "完成！启动耗时 4.8 秒。使用 \"help\" 查看更多指令。" },
-  ];
-  seedLogs.forEach((l) => appendLine(l.m, l.t));
-  setStatus("运行中");
+  setStatus("已停止");
+  appendLine("等待服务器日志 …", "info");
+
+  function connectLive() {
+    const token = window.getToken && window.getToken();
+    if (!token || !sid) return;
+    const proto = location.protocol === "https:" ? "wss" : "ws";
+    const ws = new WebSocket(proto + "://" + location.host + "/ws?token=" + token);
+    ws.onopen = () => ws.send(JSON.stringify({ type: "subscribe", serverId: sid }));
+    ws.onmessage = (e) => {
+      let m;
+      try { m = JSON.parse(e.data); } catch (x) { return; }
+      if (m.type === "log") appendLine(m.data, "info");
+      else if (m.type === "status") {
+        const st = m.data.status;
+        setStatus(st === "running" ? "运行中" : st === "starting" ? "启动中" : st === "stopped" ? "已停止" : "未知");
+      }
+    };
+  }
+  connectLive();
 
   function sendCommand(cmd) {
     if (!cmd) return;
     appendLine("> " + cmd, "cmd");
-    setTimeout(() => {
-      appendLine("指令已发送: " + cmd, "info");
-    }, 120);
+    window.api("/api/servers/" + encodeURIComponent(sid) + "/command", { method: "POST", body: JSON.stringify({ command: cmd }) })
+      .then((r) => r.json())
+      .then((d) => { if (d.error) appendLine(d.error, "error"); })
+      .catch((e) => appendLine(e.message || "发送失败", "error"));
   }
   cmdInput.addEventListener("keydown", (e) => {
     if (e.key === "Enter") {
@@ -96,26 +111,16 @@
   document.querySelectorAll("[data-ctl]").forEach((btn) => {
     btn.addEventListener("click", () => {
       const ctl = btn.dataset.ctl;
-      if (ctl === "start") {
-        appendLine("正在启动服务器 …", "info");
-        setStatus("启动中");
-        btn.disabled = true;
-        setTimeout(() => {
-          appendLine("Paper 1.21.1 启动完成", "info");
-          setStatus("运行中");
-          btn.disabled = false;
-        }, 1800);
-      } else if (ctl === "stop") {
-        appendLine("服务器正在关闭 …", "warn");
-        setStatus("停止中");
-        setTimeout(() => {
-          appendLine("服务器已停止", "warn");
-          setStatus("已停止");
-        }, 1500);
-      } else if (ctl === "kill") {
-        appendLine("正在强制终止进程 (PID 4210) …", "error");
-        setStatus("已终止");
-      }
+      const action = ctl === "kill" ? "kill" : ctl;
+      const labels = { start: "正在启动服务器 …", stop: "服务器正在关闭 …", kill: "正在强制终止进程 …" };
+      appendLine(labels[action] || "", action === "start" ? "info" : "warn");
+      setStatus(action === "start" ? "启动中" : "停止中");
+      btn.disabled = true;
+      window.api("/api/servers/" + encodeURIComponent(sid) + "/" + action, { method: "POST" })
+        .then((r) => r.json())
+        .then((d) => { if (d.error) { appendLine(d.error, "error"); setStatus("已停止"); } })
+        .catch((e) => { appendLine(e.message || "操作失败", "error"); setStatus("已停止"); })
+        .finally(() => { btn.disabled = false; });
     });
   });
 
@@ -399,7 +404,7 @@
   function toggleAdmin(p) {
     p.role = p.role === "admin" ? "player" : "admin";
     savePlayers();
-    appendLine(p.name + " 已被" + (p.role === "admin" ? "设为管理员" : "取消管理员"), "cmd");
+    window.toast(p.name + " 已被" + (p.role === "admin" ? "设为管理员" : "取消管理员"), "success");
     renderPlayers();
   }
 
@@ -408,14 +413,14 @@
       p.black = false;
       p.reason = "";
       savePlayers();
-      appendLine(p.name + " 已解除拉黑", "cmd");
+      window.toast(p.name + " 已解除拉黑", "success");
       renderPlayers();
     } else {
       askReason("拉黑玩家：" + p.name, (r) => {
         p.black = true;
         p.reason = r;
         savePlayers();
-        appendLine(p.name + " 已被拉黑" + (r ? "（理由：" + r + "）" : ""), "error");
+        window.toast(p.name + " 已被拉黑" + (r ? "（理由：" + r + "）" : ""), "error");
         renderPlayers();
       });
     }
@@ -425,7 +430,7 @@
     askReason("踢出玩家：" + p.name, (r) => {
       p.online = false;
       savePlayers();
-      appendLine(p.name + " 已被踢出游戏" + (r ? "（理由：" + r + "）" : ""), "error");
+      window.toast(p.name + " 已被踢出游戏" + (r ? "（理由：" + r + "）" : ""), "error");
       renderPlayers();
     });
   }
@@ -472,7 +477,7 @@
 
   document.getElementById("player-reload").addEventListener("click", () => {
     renderPlayers();
-    appendLine("玩家列表已刷新", "info");
+    window.toast("玩家列表已刷新", "info");
   });
 
   renderPlayers();

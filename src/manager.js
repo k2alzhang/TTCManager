@@ -60,6 +60,11 @@ class ServerManager {
     return this.start(id);
   }
 
+  kill(id) {
+    const rt = this._runtimes.get(id);
+    if (rt) rt.kill();
+  }
+
   status(id) {
     const rt = this._runtimes.get(id);
     if (!rt) return "stopped";

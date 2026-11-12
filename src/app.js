@@ -3,7 +3,7 @@ const fs = require("node:fs");
 const path = require("node:path");
 const { getSettings } = require("./settings.js");
 const { ensureAdmin, setupAdmin, login, verifyToken, logout } = require("./auth.js");
-const { listServers, getServer } = require("./servers.js");
+const { listServers, getServer, updateServer } = require("./servers.js");
 const { loadMasterKey } = require("./crypto.js");
 const { getBackend } = require("./files.js");
 const { getConnection, setConnection } = require("./connections.js");
@@ -119,7 +119,7 @@ function createApp({ dataDir, manager }) {
             return json(res, 400, { error: String(e.message || e) });
           }
         }
-        const rm = p.match(/^\/api\/servers\/([^/]+)\/(start|stop|restart)$/);
+        const rm = p.match(/^\/api\/servers\/([^/]+)\/(start|stop|restart|kill)$/);
         if (rm && req.method === "POST") {
           if (!verifyToken(dataDir, tokenFrom(req))) return json(res, 401, { error: "未登录" });
           if (!manager) return json(res, 500, { error: "运行管理器未就绪" });
@@ -127,16 +127,21 @@ function createApp({ dataDir, manager }) {
           try {
             if (rm[2] === "start") await manager.start(id);
             else if (rm[2] === "stop") manager.stop(id);
-            else await manager.restart(id);
+            else if (rm[2] === "restart") await manager.restart(id);
+            else manager.kill(id);
             return json(res, 200, { ok: true });
           } catch (e) {
             return json(res, 500, { error: String(e.message || e) });
           }
         }
         const sm = p.match(/^\/api\/servers\/([^/]+)$/);
-        if (sm && req.method === "GET") {
+        if (sm) {
           if (!verifyToken(dataDir, tokenFrom(req))) return json(res, 401, { error: "未登录" });
-          return json(res, 200, getServer(dataDir, sm[1]));
+          if (req.method === "GET") return json(res, 200, getServer(dataDir, sm[1]));
+          if (req.method === "PUT") {
+            const body = await readBody(req);
+            return json(res, 200, updateServer(dataDir, sm[1], body));
+          }
         }
         return json(res, 404, { error: "not found" });
       }
