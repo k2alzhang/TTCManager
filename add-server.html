@@ -60,8 +60,7 @@
           <div class="step" id="version-step" hidden>
             <div class="step-head"><span class="step-no">2</span><span>选择版本</span></div>
             <p class="muted step-note" id="version-note"></p>
-            <div class="family-bar" id="family-bar" hidden></div>
-            <div class="version-grid" id="version-grid"></div>
+            <div class="version-list" id="version-grid" role="listbox" aria-label="版本列表"></div>
           </div>
 
           <div class="add-actions">
@@ -173,15 +172,39 @@
     .family-chip:hover { color: var(--color-card-foreground); }
     .family-chip.active { background: rgba(34, 197, 94, 0.16); border-color: var(--color-accent); color: #4ADE80; }
 
-    .version-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 8px; }
-    .version-chip {
-      padding: 10px; border-radius: 9px; text-align: center; font-family: var(--font-mono);
-      font-size: 13px; background: rgba(255, 255, 255, 0.04); border: 1px solid rgba(255, 255, 255, 0.1);
-      color: var(--color-card-foreground); cursor: pointer; transition: all 0.2s ease;
+    .version-list {
+      max-height: 320px;
+      overflow-y: auto;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 11px;
+      background: rgba(255, 255, 255, 0.02);
+      display: flex;
+      flex-direction: column;
     }
-    .version-chip:hover { border-color: rgba(34, 197, 94, 0.5); }
-    .version-chip.active { border-color: var(--color-accent); background: rgba(34, 197, 94, 0.14); color: #4ADE80; }
-    .version-chip .latest { display: block; font-size: 10px; color: var(--color-accent); font-family: var(--font-body); }
+    .version-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      padding: 9px 14px;
+      font-family: var(--font-mono);
+      font-size: 13px;
+      cursor: pointer;
+      color: var(--color-card-foreground);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+      transition: background 0.15s ease;
+    }
+    .version-row:last-child { border-bottom: none; }
+    .version-row:hover { background: rgba(255, 255, 255, 0.05); }
+    .version-row.active { background: rgba(34, 197, 94, 0.14); color: #4ADE80; }
+    .version-row .latest {
+      font-size: 10.5px;
+      font-family: var(--font-body);
+      color: var(--color-accent);
+      background: rgba(34, 197, 94, 0.15);
+      padding: 2px 8px;
+      border-radius: 999px;
+    }
   </style>
 
   <script src="js/add-server.js"></script>
