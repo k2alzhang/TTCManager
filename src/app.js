@@ -3,7 +3,7 @@ const fs = require("node:fs");
 const path = require("node:path");
 const { getSettings } = require("./settings.js");
 const { ensureAdmin, setupAdmin, login, verifyToken, logout } = require("./auth.js");
-const { listServers } = require("./servers.js");
+const { listServers, getServer } = require("./servers.js");
 const { loadMasterKey } = require("./crypto.js");
 const { getBackend } = require("./files.js");
 const { getConnection, setConnection } = require("./connections.js");
@@ -38,7 +38,7 @@ function mime(p) {
   return { ".html": "text/html", ".css": "text/css", ".js": "text/javascript", ".svg": "image/svg+xml", ".jpg": "image/jpeg", ".png": "image/png", ".json": "application/json", ".ico": "image/x-icon" }[ext] || "application/octet-stream";
 }
 
-function createApp({ dataDir }) {
+function createApp({ dataDir, manager }) {
   return http.createServer(async (req, res) => {
     try {
       const url = new URL(req.url, "http://x");
@@ -106,6 +106,25 @@ function createApp({ dataDir }) {
             const body = await readBody(req);
             return json(res, 200, setConnection(dataDir, id, body, key));
           }
+        }
+        const rm = p.match(/^\/api\/servers\/([^/]+)\/(start|stop|restart)$/);
+        if (rm && req.method === "POST") {
+          if (!verifyToken(dataDir, tokenFrom(req))) return json(res, 401, { error: "未登录" });
+          if (!manager) return json(res, 500, { error: "运行管理器未就绪" });
+          const id = rm[1];
+          try {
+            if (rm[2] === "start") await manager.start(id);
+            else if (rm[2] === "stop") manager.stop(id);
+            else await manager.restart(id);
+            return json(res, 200, { ok: true });
+          } catch (e) {
+            return json(res, 500, { error: String(e.message || e) });
+          }
+        }
+        const sm = p.match(/^\/api\/servers\/([^/]+)$/);
+        if (sm && req.method === "GET") {
+          if (!verifyToken(dataDir, tokenFrom(req))) return json(res, 401, { error: "未登录" });
+          return json(res, 200, getServer(dataDir, sm[1]));
         }
         return json(res, 404, { error: "not found" });
       }
