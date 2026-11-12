@@ -253,8 +253,8 @@
       display: flex;
       align-items: center;
       justify-content: space-between;
-      gap: 12px;
-      margin-bottom: 14px;
+      gap: 10px;
+      margin-bottom: 12px;
       flex-wrap: wrap;
     }
     .fm-breadcrumb {
@@ -270,7 +270,9 @@
     .fm-breadcrumb .crumb:hover { color: var(--color-card-foreground); }
     .fm-breadcrumb .crumb.current { color: var(--color-card-foreground); font-weight: 500; }
     .fm-breadcrumb .sep { opacity: 0.5; }
-    .fm-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+    .fm-actions { display: flex; gap: 6px; flex-wrap: wrap; }
+    .fm-actions .btn { padding: 7px 11px; font-size: 12.5px; gap: 5px; }
+    .fm-actions .btn svg { width: 14px; height: 14px; }
 
     .fm-list-wrap { padding: 6px; overflow-x: auto; }
     .fm-table { width: 100%; border-collapse: collapse; }
@@ -456,18 +458,18 @@
         overflow-x: auto;
         border-right: none;
         border-bottom: 1px solid var(--color-border);
-        padding: 6px 8px;
+        padding: 5px 6px;
         gap: 2px;
       }
       .sidebar-label { display: none; }
       .nav-item {
         white-space: nowrap;
-        padding: 7px 9px;
-        gap: 7px;
-        font-size: 13px;
+        padding: 5px 7px;
+        gap: 5px;
+        font-size: 12px;
         flex-shrink: 0;
       }
-      .nav-item .icon { width: 15px; height: 15px; }
+      .nav-item .icon { width: 13px; height: 13px; }
       .terminal-col { width: 100%; height: 320px; border-right: none; border-bottom: 1px solid var(--color-border); }
       .fm-ops .ops-extra { display: none; }
       .fm-ops .ops-more { display: inline-flex; }
@@ -478,9 +480,11 @@
       .fm-name > span:last-child { max-width: 110px; }
     }
     @media (max-width: 700px) {
+      .topbar { height: 58px; }
       .topbar-actions .btn span { display: none; }
-      .topbar-actions .btn { padding: 9px 11px; }
-      .topbar-title .name { max-width: 150px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+      .topbar-actions .btn { padding: 8px 10px; gap: 0; }
+      .topbar-actions .btn svg { width: 17px; height: 17px; }
+      .topbar-title .name { max-width: 130px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     }
   </style>
 
