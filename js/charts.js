@@ -3,7 +3,7 @@
 
   function createStreamChart(canvas, opts) {
     opts = opts || {};
-    const color = opts.color || "#22C55E";
+    const color = opts.color || "#4F46E5";
     const fillAlpha = opts.fillAlpha != null ? opts.fillAlpha : 0.16;
     const maxPoints = opts.maxPoints || 90;
     const min = opts.min != null ? opts.min : 0;

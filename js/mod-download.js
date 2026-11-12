@@ -94,7 +94,7 @@
       version: hit.latest_version || "?",
       source: "Modrinth",
       enabled: true,
-      color: "#22C55E",
+      color: "#4F46E5",
     });
     localStorage.setItem("mc-panel-plugins", JSON.stringify(list));
     btn.disabled = true;

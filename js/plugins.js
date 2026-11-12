@@ -2,7 +2,7 @@
   "use strict";
 
   const defaults = [
-    { id: "essentials", name: "EssentialsX", version: "2.20.1", source: "Modrinth", enabled: true, color: "#22C55E" },
+    { id: "essentials", name: "EssentialsX", version: "2.20.1", source: "Modrinth", enabled: true, color: "#4F46E5" },
     { id: "luckperms", name: "LuckPerms", version: "5.4.1", source: "Modrinth", enabled: true, color: "#38BDF8" },
     { id: "viaversion", name: "ViaVersion", version: "5.2.1", source: "Modrinth", enabled: true, color: "#A78BFA" },
     { id: "worldedit", name: "WorldEdit", version: "7.3.0", source: "CurseForge", enabled: true, color: "#FBBF24" },

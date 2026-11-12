@@ -122,7 +122,7 @@
   // ---- monitor cards + charts ----
   const metrics = document.getElementById("metrics");
   const metricDefs = [
-    { key: "memory", label: "内存占用", unit: "MB", min: 0, max: 2048, color: "#22C55E", base: 860, range: 160 },
+    { key: "memory", label: "内存占用", unit: "MB", min: 0, max: 2048, color: "#4F46E5", base: 860, range: 160 },
     { key: "cpu", label: "CPU 占用", unit: "%", min: 0, max: 100, color: "#38BDF8", base: 34, range: 22 },
     { key: "up", label: "网络上传", unit: "KB/s", min: 0, max: 1000, color: "#A78BFA", base: 260, range: 140 },
     { key: "down", label: "网络下载", unit: "KB/s", min: 0, max: 2000, color: "#F472B6", base: 640, range: 320 },
