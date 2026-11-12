@@ -132,17 +132,19 @@
   ];
 
   const charts = {};
+  const metricCards = [];
   metricDefs.forEach((m) => {
     const card = document.createElement("div");
-    card.className = "card metric-card";
+    card.className = "card metric-card glow-card";
     card.innerHTML = `
       <div class="m-head">
         <span class="m-label">${m.label}</span>
-        <span class="m-value" id="val-${m.key}">--<small> ${m.unit}</small></span>
+        <span class="m-value" id="val-${m.key}">0<small> ${m.unit}</small></span>
       </div>
       <canvas id="chart-${m.key}"></canvas>
     `;
     metrics.appendChild(card);
+    metricCards.push(card);
   });
 
   function formatVal(m, v) {
@@ -173,6 +175,33 @@
     return Math.max(lo, Math.min(hi, v));
   }
 
+  const reduceMotion = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const disp = {};
+  metricDefs.forEach((m) => {
+    disp[m.key] = { shown: 0, target: 0 };
+  });
+  function animateVal(m, target) {
+    const d = disp[m.key];
+    d.target = target;
+    if (reduceMotion) {
+      d.shown = target;
+      charts[m.key].valEl.innerHTML = formatVal(m, target) + "<small> " + m.unit + "</small>";
+      return;
+    }
+    const start = d.shown;
+    const t0 = performance.now();
+    const dur = 650;
+    function step(now) {
+      const t = Math.min(1, (now - t0) / dur);
+      const ease = 1 - Math.pow(1 - t, 3);
+      const v = start + (d.target - start) * ease;
+      d.shown = v;
+      charts[m.key].valEl.innerHTML = formatVal(m, v) + "<small> " + m.unit + "</small>";
+      if (t < 1) requestAnimationFrame(step);
+    }
+    requestAnimationFrame(step);
+  }
+
   function tick() {
     metricDefs.forEach((m) => {
       const c = charts[m.key];
@@ -180,9 +209,10 @@
       const next = clamp(c.value + drift, m.min, m.max);
       c.value = next;
       c.chart.push(next);
-      c.valEl.innerHTML = formatVal(m, next) + "<small> " + m.unit + "</small>";
+      animateVal(m, next);
     });
   }
+  metricDefs.forEach((m) => animateVal(m, m.base));
   setInterval(tick, 1000);
 
   // ---- server properties ----
@@ -193,14 +223,22 @@
     { k: "在线玩家", v: "12 / 20" },
     { k: "运行时长", v: "3 小时 24 分" },
   ];
+  const propCards = [];
   propItems.forEach((p) => {
     const item = document.createElement("div");
-    item.className = "card prop-item";
+    item.className = "card prop-item glow-card";
     item.innerHTML = '<span class="k">' + p.k + '</span><span class="v">' + p.v + "</span>";
     props.appendChild(item);
+    propCards.push(item);
   });
 
   window.addEventListener("resize", () => {
     Object.values(charts).forEach((c) => c.chart.draw());
   });
+
+  if (window.MotionFX) {
+    MotionFX.initGlowCards(".glow-card");
+    MotionFX.addEntrance(metrics, metricCards);
+    MotionFX.addEntrance(props, propCards);
+  }
 })();

@@ -32,10 +32,10 @@
 
   function render() {
     grid.innerHTML = "";
-    servers.forEach((s) => {
+    servers.forEach((s, idx) => {
       const st = statusMap[s.status];
       const card = document.createElement("div");
-      card.className = "card server-card";
+      card.className = "card server-card glow-card";
       card.dataset.id = s.id;
       card.setAttribute("role", "link");
       card.setAttribute("tabindex", "0");
@@ -92,6 +92,13 @@
       });
       grid.appendChild(card);
     });
+    if (window.MotionFX) {
+      MotionFX.initGlowCards(".server-card");
+      if (!render.done) {
+        MotionFX.addEntrance(grid, grid.querySelectorAll(".server-card"));
+        render.done = true;
+      }
+    }
   }
 
   document.getElementById("add-server").addEventListener("click", () => {

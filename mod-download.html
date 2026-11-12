@@ -3,6 +3,9 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link rel="preconnect" href="https://cdn.modrinth.com" />
   <title>下载模组 / 插件</title>
   <link rel="stylesheet" href="css/style.css" />
 </head>
@@ -19,14 +22,14 @@
 
     <div class="app-body">
       <main class="main add-main">
-        <div class="tabs" id="source-tabs" role="tablist" aria-label="搜索源">
+        <div class="tabs anim-in" id="source-tabs" role="tablist" aria-label="搜索源">
           <button class="tab active" data-src="modrinth" role="tab" aria-selected="true">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16v16H4z"/><circle cx="12" cy="12" r="3"/></svg>
             Modrinth
           </button>
         </div>
 
-        <div class="search-bar">
+        <div class="search-bar anim-in" style="--d:.06s">
           <input class="text-input" id="mod-search" type="search" placeholder="搜索模组或插件名称…" aria-label="搜索模组或插件" />
           <button class="btn btn-success" id="mod-search-btn">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.3-4.3"/></svg>
@@ -83,6 +86,7 @@
     }
   </style>
 
+  <script src="js/effects.js"></script>
   <script src="js/mod-download.js"></script>
 </body>
 </html>

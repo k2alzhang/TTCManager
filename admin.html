@@ -3,6 +3,9 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link rel="preconnect" href="https://cdnjs.cloudflare.com" />
   <title>服务器管理后台</title>
   <link rel="stylesheet" href="css/style.css" />
 </head>
@@ -191,7 +194,7 @@
     .cmd-input::placeholder { color: rgba(203, 213, 225, 0.8); }
 
     .pane-head { margin-bottom: 18px; }
-    .pane-title { font-size: 22px; font-weight: 700; letter-spacing: -0.01em; }
+    .pane-title { font-size: 22px; font-weight: 700; letter-spacing: -0.01em; text-wrap: balance; }
 
     .metrics {
       display: grid;
@@ -293,7 +296,7 @@
     .fm-name svg { width: 16px; height: 16px; flex-shrink: 0; }
     .fm-name .dir-ic { color: var(--color-warn); }
     .fm-name .file-ic { color: var(--color-muted-foreground); }
-    .fm-cell { color: var(--color-muted-foreground); font-family: var(--font-mono); font-size: 12.5px; }
+    .fm-cell { color: var(--color-muted-foreground); font-family: var(--font-mono); font-size: 12.5px; font-variant-numeric: tabular-nums; }
     .fm-ops { white-space: nowrap; text-align: right; }
     .fm-ops .btn { padding: 6px 9px; font-size: 12px; }
     .fm-ops .btn svg { width: 13px; height: 13px; }
@@ -316,6 +319,8 @@
       display: flex;
       flex-direction: column;
       gap: 2px;
+      overscroll-behavior: contain;
+      touch-action: none;
     }
     .ctx-item {
       display: flex;
@@ -355,6 +360,7 @@
       justify-content: center;
       padding: 20px;
       z-index: 50;
+      overscroll-behavior: contain;
     }
     .modal {
       width: 100%;
@@ -410,7 +416,7 @@
       cursor: pointer;
       font-size: 12px;
       color: var(--color-muted-foreground);
-      transition: all 0.15s ease;
+      transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
     }
     .perm-bit input { accent-color: var(--color-accent); cursor: pointer; }
     .perm-preview {
@@ -538,6 +544,7 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/sql/sql.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/properties/properties.min.js"></script>
   <script src="js/charts.js"></script>
+  <script src="js/effects.js"></script>
   <script src="js/files.js"></script>
   <script src="js/plugins.js"></script>
   <script src="js/admin.js"></script>
