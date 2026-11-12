@@ -48,6 +48,24 @@
     });
   }
 
+  function initSplitChar(selector) {
+    document.querySelectorAll(selector).forEach(function (el) {
+      var node = Array.prototype.filter.call(el.childNodes, function (n) {
+        return n.nodeType === 3 && n.textContent.trim();
+      })[0];
+      if (!node) return;
+      var wrap = document.createElement("span");
+      wrap.className = "nav-label";
+      node.textContent.split("").forEach(function (ch) {
+        var s = document.createElement("span");
+        s.className = "sc";
+        s.textContent = ch === " " ? "\u00A0" : ch;
+        wrap.appendChild(s);
+      });
+      node.replaceWith(wrap);
+    });
+  }
+
   function addEntrance(container, items, step) {
     if (reduceMotion) return;
     var s = step || 0.05;
@@ -60,6 +78,7 @@
   global.MotionFX = {
     initGlowCards: initGlowCards,
     initScramble: initScramble,
+    initSplitChar: initSplitChar,
     addEntrance: addEntrance,
   };
 })(window);

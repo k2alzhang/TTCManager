@@ -303,8 +303,8 @@ button {
 .nav-item {
   display: flex;
   align-items: center;
-  gap: 11px;
-  padding: 10px 12px;
+  gap: 9px;
+  padding: 9px 11px;
   border-radius: var(--radius-sm);
   color: var(--color-muted-foreground);
   font-size: 14px;
@@ -417,10 +417,21 @@ button {
   border-color: transparent;
 }
 
-/* ---------- Scramble ---------- */
-.scramble {
-  will-change: contents;
+/* ---------- Split Character (Motion.Lab split-char) ---------- */
+.split-char .nav-label {
+  display: inline-block;
+  overflow: hidden;
+  vertical-align: middle;
 }
+.split-char .sc {
+  display: inline-block;
+  animation: splitTop var(--duration, 0.8s) ease-out both;
+}
+.split-char .sc:nth-child(even) {
+  animation-name: splitBot;
+}
+@keyframes splitTop { from { transform: translateY(-100%); } to { transform: translateY(0); } }
+@keyframes splitBot { from { transform: translateY(100%); } to { transform: translateY(0); } }
 
 .btn:hover {
   transform: translateY(-1px);

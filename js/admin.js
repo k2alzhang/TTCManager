@@ -238,6 +238,7 @@
 
   if (window.MotionFX) {
     MotionFX.initGlowCards(".glow-card");
+    MotionFX.initSplitChar(".nav-item");
     MotionFX.addEntrance(metrics, metricCards);
     MotionFX.addEntrance(props, propCards);
   }
