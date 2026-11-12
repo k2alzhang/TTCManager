@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>添加服务器</title>
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+  <div class="app">
+    <header class="topbar">
+      <div class="topbar-title">
+        <a class="back" href="index.html" aria-label="返回服务器列表">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+        </a>
+        <span class="name">添加服务器</span>
+      </div>
+    </header>
+
+    <div class="app-body">
+      <main class="main add-main">
+        <div class="tabs" role="tablist" aria-label="添加方式">
+          <button class="tab active" data-mode="upload" role="tab" aria-selected="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12"/></svg>
+            上传本地核心
+          </button>
+          <button class="tab" data-mode="download" role="tab" aria-selected="false">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
+            在线下载
+          </button>
+        </div>
+
+        <!-- Upload pane -->
+        <div class="pane" data-pane="upload">
+          <div class="card dropzone" id="dropzone" tabindex="0" role="button" aria-label="点击或拖入服务器核心 jar 文件">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M13 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V9z"/><path d="M13 3v6h6"/></svg>
+            <p class="dz-title" id="dz-title">点击选择或拖入服务器核心 jar 文件</p>
+            <p class="muted">仅支持 .jar 格式，如 paper-1.21.1.jar</p>
+            <input type="file" id="jar-input" accept=".jar" hidden />
+          </div>
+          <label class="field">
+            <span class="field-label">服务器名称</span>
+            <input class="text-input" id="upload-name" type="text" placeholder="例如：我的生存服" maxlength="24" />
+          </label>
+          <div class="add-actions">
+            <button class="btn btn-success" id="upload-add" disabled>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+              添加服务器
+            </button>
+          </div>
+        </div>
+
+        <!-- Download pane -->
+        <div class="pane" data-pane="download" hidden>
+          <div class="step">
+            <div class="step-head"><span class="step-no">1</span><span>选择服务端核心</span></div>
+            <div class="core-grid" id="core-grid"></div>
+          </div>
+
+          <div class="step" id="version-step" hidden>
+            <div class="step-head"><span class="step-no">2</span><span>选择版本</span></div>
+            <p class="muted step-note" id="version-note"></p>
+            <div class="family-bar" id="family-bar" hidden></div>
+            <div class="version-grid" id="version-grid"></div>
+          </div>
+
+          <div class="add-actions">
+            <button class="btn btn-success" id="download-add" disabled>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
+              下载并添加
+            </button>
+          </div>
+        </div>
+      </main>
+    </div>
+  </div>
+
+  <style>
+    .back {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 30px;
+      height: 30px;
+      border-radius: 8px;
+      color: var(--color-muted-foreground);
+      transition: background 0.2s ease, color 0.2s ease;
+    }
+    .back:hover { background: rgba(255, 255, 255, 0.06); color: var(--color-card-foreground); }
+    .back svg { width: 18px; height: 18px; }
+
+    .add-main { max-width: 720px; margin: 0 auto; }
+
+    .tabs {
+      display: flex;
+      gap: 8px;
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      padding: 5px;
+      border-radius: 12px;
+      margin-bottom: 20px;
+    }
+    .tab {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 11px;
+      border-radius: 9px;
+      color: var(--color-muted-foreground);
+      font-size: 14px;
+      font-weight: 500;
+      transition: background 0.2s ease, color 0.2s ease;
+    }
+    .tab svg { width: 16px; height: 16px; }
+    .tab.active { background: rgba(34, 197, 94, 0.16); color: #4ADE80; }
+
+    .pane { display: flex; flex-direction: column; gap: 18px; }
+
+    .dropzone {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 42px 20px;
+      border: 2px dashed rgba(148, 163, 184, 0.35);
+      border-radius: 14px;
+      cursor: pointer;
+      text-align: center;
+      transition: border-color 0.2s ease, background 0.2s ease;
+    }
+    .dropzone:hover, .dropzone.drag { border-color: var(--color-accent); background: rgba(34, 197, 94, 0.06); }
+    .dropzone svg { width: 40px; height: 40px; color: var(--color-muted-foreground); }
+    .dropzone.selected { border-color: var(--color-accent); background: rgba(34, 197, 94, 0.08); }
+    .dz-title { font-weight: 500; }
+
+    .field { display: flex; flex-direction: column; gap: 7px; }
+    .field-label { font-size: 13px; color: var(--color-muted-foreground); }
+    .text-input {
+      padding: 11px 13px;
+      border-radius: 9px;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid var(--color-border);
+      color: var(--color-card-foreground);
+      font-size: 14px;
+      outline: none;
+      transition: border-color 0.2s ease, background 0.2s ease;
+    }
+    .text-input:focus { border-color: var(--color-accent); background: rgba(255, 255, 255, 0.07); }
+
+    .add-actions { display: flex; justify-content: flex-end; }
+    .add-actions .btn { padding: 11px 18px; }
+
+    .step { display: flex; flex-direction: column; gap: 14px; }
+    .step-head { display: flex; align-items: center; gap: 10px; font-weight: 600; font-size: 15px; }
+    .step-no {
+      width: 24px; height: 24px; border-radius: 50%;
+      background: rgba(34, 197, 94, 0.16); color: #4ADE80;
+      display: inline-flex; align-items: center; justify-content: center;
+      font-size: 13px; font-weight: 600;
+    }
+    .step-note { font-size: 12.5px; }
+
+    .core-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 12px; }
+    .core-card {
+      display: flex; flex-direction: column; gap: 8px;
+      padding: 16px; border-radius: 12px; cursor: pointer;
+      background: rgba(255, 255, 255, 0.04); border: 1px solid rgba(255, 255, 255, 0.1);
+      transition: border-color 0.2s ease, background 0.2s ease;
+    }
+    .core-card:hover { border-color: rgba(34, 197, 94, 0.5); background: rgba(34, 197, 94, 0.06); }
+    .core-card.active { border-color: var(--color-accent); background: rgba(34, 197, 94, 0.12); }
+    .core-card .c-name { font-weight: 600; font-size: 15px; }
+    .core-card .c-src { font-size: 11.5px; color: var(--color-muted-foreground); word-break: break-all; }
+
+    .family-bar { display: flex; flex-wrap: wrap; gap: 8px; }
+    .family-chip {
+      padding: 6px 13px; border-radius: 999px; font-size: 12.5px;
+      background: rgba(255, 255, 255, 0.05); border: 1px solid var(--color-border);
+      color: var(--color-muted-foreground); cursor: pointer; transition: all 0.2s ease;
+    }
+    .family-chip:hover { color: var(--color-card-foreground); }
+    .family-chip.active { background: rgba(34, 197, 94, 0.16); border-color: var(--color-accent); color: #4ADE80; }
+
+    .version-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 8px; }
+    .version-chip {
+      padding: 10px; border-radius: 9px; text-align: center; font-family: var(--font-mono);
+      font-size: 13px; background: rgba(255, 255, 255, 0.04); border: 1px solid rgba(255, 255, 255, 0.1);
+      color: var(--color-card-foreground); cursor: pointer; transition: all 0.2s ease;
+    }
+    .version-chip:hover { border-color: rgba(34, 197, 94, 0.5); }
+    .version-chip.active { border-color: var(--color-accent); background: rgba(34, 197, 94, 0.14); color: #4ADE80; }
+    .version-chip .latest { display: block; font-size: 10px; color: var(--color-accent); font-family: var(--font-body); }
+  </style>
+
+  <script src="js/add-server.js"></script>
+</body>
+</html>

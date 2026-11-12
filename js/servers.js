@@ -9,11 +9,14 @@
     plus: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>',
   };
 
-  const servers = [
+  const defaults = [
     { id: "survival", name: "生存服务器", status: "online", version: "1.21.1", core: "Paper", players: "12 / 20" },
     { id: "creative", name: "创造服务器", status: "offline", version: "1.20.6", core: "Spigot", players: "0 / 40" },
     { id: "skyblock", name: "空岛服务器", status: "starting", version: "1.21.1", core: "Purpur", players: "3 / 30" },
   ];
+  const stored = JSON.parse(localStorage.getItem("mc-panel-servers") || "[]");
+  const storedIds = new Set(stored.map((s) => s.id));
+  const servers = stored.concat(defaults.filter((d) => !storedIds.has(d.id)));
 
   const grid = document.getElementById("server-grid");
   const statusMap = {
@@ -92,11 +95,7 @@
   }
 
   document.getElementById("add-server").addEventListener("click", () => {
-    const name = prompt("输入服务器名称");
-    if (name) {
-      servers.push({ id: "server-" + Date.now(), name, status: "offline", version: "1.21.1", core: "Paper", players: "0 / 20" });
-      render();
-    }
+    window.location.href = "add-server.html";
   });
 
   document.getElementById("logo-icon").innerHTML = ICONS.logo;
