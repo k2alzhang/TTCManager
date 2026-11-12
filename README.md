@@ -1,4 +1,4 @@
-# mc-panel
+# TTCManager
 
 Minecraft 服务器管理面板 — Node.js 实现，跨 Windows / macOS / Linux。
 
@@ -71,7 +71,7 @@ npm test            # node --test，零测试依赖
 
 ```
 server.js            入口（http + ws + 运行时管理器）
-bin/mc-panel         CLI shim
+bin/ttc-manager     CLI shim
 src/                 后端逻辑（加密/存储/鉴权/运行时/文件后端/下载…）
 js/                  前端脚本（api.js 为鉴权封装，其余为各页逻辑）
 css/style.css        设计系统（浅色 slate + 靛蓝 accent）

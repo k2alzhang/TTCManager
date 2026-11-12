@@ -1,10 +1,10 @@
 {
-  "name": "mc-panel",
+  "name": "ttc-manager",
   "version": "0.1.0",
-  "description": "Minecraft server management panel — Node.js, cross-platform (Windows/macOS/Linux)",
+  "description": "TTCManager — Minecraft 服务器管理面板（Node.js，跨 Windows/macOS/Linux）",
   "license": "MIT",
   "bin": {
-    "mc-panel": "server.js"
+    "ttc-manager": "server.js"
   },
   "main": "server.js",
   "scripts": {

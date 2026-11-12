@@ -23,7 +23,7 @@ if (require.main === module) {
     process.exit(1);
   });
   server.listen(settings.port, settings.host, () => {
-    console.log(`mc-panel listening on http://${settings.host}:${settings.port} (data: ${dataDir})`);
+    console.log(`TTCManager listening on http://${settings.host}:${settings.port} (data: ${dataDir})`);
   });
 }
 

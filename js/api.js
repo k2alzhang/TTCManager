@@ -3,7 +3,7 @@
     typeof localStorage !== "undefined"
       ? localStorage
       : { getItem: () => null, setItem: () => {}, removeItem: () => {} };
-  const TOKEN_KEY = "mc-panel-token";
+  const TOKEN_KEY = "ttcmanager-token";
 
   function getToken() {
     return storage.getItem(TOKEN_KEY);

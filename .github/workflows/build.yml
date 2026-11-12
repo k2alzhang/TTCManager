@@ -13,13 +13,13 @@ jobs:
         include:
           - os: ubuntu-latest
             target: node18-linux-x64
-            artifact: mc-panel-linux-x64
+            artifact: ttcmanager-linux-x64
           - os: macos-latest
             target: node18-mac-x64
-            artifact: mc-panel-mac-x64
+            artifact: ttcmanager-mac-x64
           - os: windows-latest
             target: node18-win-x64
-            artifact: mc-panel-win-x64
+            artifact: ttcmanager-win-x64
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4

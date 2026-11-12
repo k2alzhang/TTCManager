@@ -4,6 +4,7 @@ const path = require("node:path");
 
 const SALT_LEN = 16;
 const HASH_LEN = 64;
+// 派生盐为内部常量，刻意保留旧值以兼容已加密的机密数据（改名不影响）
 const KEY_SALT = "mc-panel-key-salt-v1";
 
 function hashPassword(password) {

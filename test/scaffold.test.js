@@ -3,13 +3,14 @@ const assert = require("node:assert");
 const path = require("node:path");
 const fs = require("node:fs");
 
-test("package.json exposes mc-panel bin", () => {
+test("package.json names the panel TTCManager", () => {
   const pkg = require("../package.json");
-  assert.equal(pkg.bin["mc-panel"], "server.js");
+  assert.equal(pkg.name, "ttc-manager");
+  assert.equal(pkg.bin["ttc-manager"], "server.js");
 });
 
-test("bin/mc-panel shim exists", () => {
-  assert.ok(fs.existsSync(path.join(__dirname, "..", "bin", "mc-panel")));
+test("bin/ttc-manager shim exists", () => {
+  assert.ok(fs.existsSync(path.join(__dirname, "..", "bin", "ttc-manager")));
 });
 
 test("tmp helper returns a writable temp dir", () => {
