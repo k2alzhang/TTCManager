@@ -4,6 +4,9 @@ const path = require("node:path");
 const { getSettings } = require("./settings.js");
 const { ensureAdmin, setupAdmin, login, verifyToken, logout } = require("./auth.js");
 const { listServers } = require("./servers.js");
+const { loadMasterKey } = require("./crypto.js");
+const { getBackend } = require("./files.js");
+const { getConnection, setConnection } = require("./connections.js");
 
 const WEB_ROOT = path.join(__dirname, "..");
 
@@ -67,6 +70,42 @@ function createApp({ dataDir }) {
         if (p === "/api/servers" && req.method === "GET") {
           if (!verifyToken(dataDir, tokenFrom(req))) return json(res, 401, { error: "未登录" });
           return json(res, 200, listServers(dataDir));
+        }
+        const fm = p.match(/^\/api\/servers\/([^/]+)\/files(?:\/([a-z]+))?$/);
+        if (fm) {
+          if (!verifyToken(dataDir, tokenFrom(req))) return json(res, 401, { error: "未登录" });
+          const id = fm[1];
+          const action = fm[2];
+          const key = loadMasterKey(dataDir);
+          const backend = getBackend(dataDir, id, key);
+          if (!action) {
+            if (req.method === "GET") {
+              const path0 = url.searchParams.get("path") || "";
+              return json(res, 200, await backend.list(path0));
+            }
+            return json(res, 400, { error: "缺少操作" });
+          }
+          if (req.method !== "POST") return json(res, 405, { error: "method" });
+          const body = await readBody(req);
+          const full = String(body.path || "");
+          const dir = full.includes("/") ? full.slice(0, full.lastIndexOf("/")) : "";
+          const name = full.includes("/") ? full.slice(full.lastIndexOf("/") + 1) : full;
+          if (action === "read") return json(res, 200, { content: await backend.readFile(dir, name) });
+          if (action === "write") { await backend.writeFile(dir, name, body.content || ""); return json(res, 200, { ok: true }); }
+          if (action === "mkdir") { await backend.mkdir(dir, name); return json(res, 200, { ok: true }); }
+          if (action === "delete") { await backend.delete(dir, name); return json(res, 200, { ok: true }); }
+          return json(res, 400, { error: "未知操作" });
+        }
+        const cm = p.match(/^\/api\/servers\/([^/]+)\/connection$/);
+        if (cm) {
+          if (!verifyToken(dataDir, tokenFrom(req))) return json(res, 401, { error: "未登录" });
+          const id = cm[1];
+          const key = loadMasterKey(dataDir);
+          if (req.method === "GET") return json(res, 200, getConnection(dataDir, id, key));
+          if (req.method === "PUT" || req.method === "POST") {
+            const body = await readBody(req);
+            return json(res, 200, setConnection(dataDir, id, body, key));
+          }
         }
         return json(res, 404, { error: "not found" });
       }
