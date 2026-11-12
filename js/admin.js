@@ -61,6 +61,7 @@
     terminal.scrollTop = terminal.scrollHeight;
     return line;
   }
+  window.panelLog = appendLine;
 
   function setStatus(text) {
     termStatus.textContent = text;

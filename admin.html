@@ -64,10 +64,28 @@
           <div class="props" id="props"></div>
         </div>
 
-        <div class="view placeholder" data-pane="files" hidden>
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>
-          <h2>文件管理</h2>
-          <p class="muted">此页面将在后续迭代中实现。</p>
+        <div class="view" data-pane="files" hidden>
+          <div class="pane-head">
+            <h1 class="pane-title">文件管理</h1>
+            <p class="muted">管理服务器文件：编辑、上传、下载、压缩、属性与权限。</p>
+          </div>
+          <div class="fm-toolbar">
+            <nav class="fm-breadcrumb" id="fm-breadcrumb" aria-label="文件路径"></nav>
+            <div class="fm-actions">
+              <button class="btn" id="fm-upload"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12"/></svg><span>上传文件</span></button>
+              <button class="btn" id="fm-newfolder"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><path d="M12 11v6M9 14h6"/></svg><span>新建文件夹</span></button>
+              <input type="file" id="fm-file-input" multiple hidden />
+            </div>
+          </div>
+          <div class="card fm-list-wrap">
+            <table class="fm-table">
+              <thead>
+                <tr><th>名称</th><th>大小</th><th>创建时间</th><th>权限</th><th class="fm-ops-th">操作</th></tr>
+              </thead>
+              <tbody id="fm-body"></tbody>
+            </table>
+            <div class="fm-empty muted" id="fm-empty" hidden>此文件夹为空。</div>
+          </div>
         </div>
         <div class="view placeholder" data-pane="mods" hidden>
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
@@ -211,6 +229,155 @@
     .placeholder svg { width: 44px; height: 44px; opacity: 0.6; }
     .placeholder h2 { font-size: 18px; color: var(--color-card-foreground); }
 
+    /* ---------- File manager ---------- */
+    .fm-toolbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 14px;
+      flex-wrap: wrap;
+    }
+    .fm-breadcrumb {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      flex-wrap: wrap;
+      font-family: var(--font-mono);
+      font-size: 13px;
+      color: var(--color-muted-foreground);
+    }
+    .fm-breadcrumb .crumb { cursor: pointer; color: var(--color-muted-foreground); transition: color 0.15s ease; }
+    .fm-breadcrumb .crumb:hover { color: var(--color-card-foreground); }
+    .fm-breadcrumb .crumb.current { color: var(--color-card-foreground); font-weight: 500; }
+    .fm-breadcrumb .sep { opacity: 0.5; }
+    .fm-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+
+    .fm-list-wrap { padding: 6px; }
+    .fm-table { width: 100%; border-collapse: collapse; }
+    .fm-table th, .fm-table td { text-align: left; padding: 10px 12px; font-size: 13px; }
+    .fm-table thead th {
+      color: var(--color-muted-foreground);
+      font-weight: 500;
+      font-size: 12px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    }
+    .fm-table tbody tr { border-bottom: 1px solid rgba(255, 255, 255, 0.04); transition: background 0.15s ease; }
+    .fm-table tbody tr:hover { background: rgba(255, 255, 255, 0.03); }
+    .fm-table tbody tr:last-child { border-bottom: none; }
+    .fm-name {
+      display: inline-flex;
+      align-items: center;
+      gap: 9px;
+      cursor: pointer;
+      color: var(--color-card-foreground);
+    }
+    .fm-name:hover { color: #4ADE80; }
+    .fm-name svg { width: 16px; height: 16px; flex-shrink: 0; }
+    .fm-name .dir-ic { color: var(--color-warn); }
+    .fm-name .file-ic { color: var(--color-muted-foreground); }
+    .fm-cell { color: var(--color-muted-foreground); font-family: var(--font-mono); font-size: 12.5px; }
+    .fm-ops { white-space: nowrap; text-align: right; }
+    .fm-ops .btn { padding: 6px 9px; font-size: 12px; }
+    .fm-ops .btn svg { width: 13px; height: 13px; }
+    .fm-ops-th { text-align: right !important; }
+    .fm-empty { padding: 30px; text-align: center; }
+
+    /* ---------- Modals ---------- */
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(2, 6, 23, 0.6);
+      backdrop-filter: blur(4px);
+      -webkit-backdrop-filter: blur(4px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      z-index: 50;
+    }
+    .modal {
+      width: 100%;
+      max-width: 460px;
+      max-height: 86vh;
+      overflow: auto;
+      background: #161c2e;
+      border: 1px solid rgba(255, 255, 255, 0.14);
+      border-radius: 14px;
+      box-shadow: 0 24px 60px rgba(2, 6, 23, 0.6);
+      display: flex;
+      flex-direction: column;
+    }
+    .modal-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 16px 18px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    }
+    .modal-head h3 { font-size: 16px; font-weight: 600; }
+    .modal-close { color: var(--color-muted-foreground); font-size: 16px; width: 30px; height: 30px; border-radius: 8px; }
+    .modal-close:hover { background: rgba(255, 255, 255, 0.06); color: var(--color-card-foreground); }
+    .modal-body { padding: 18px; display: flex; flex-direction: column; gap: 12px; }
+    .modal-foot {
+      display: flex;
+      justify-content: flex-end;
+      gap: 8px;
+      padding: 14px 18px;
+      border-top: 1px solid rgba(255, 255, 255, 0.08);
+    }
+    .prop-row { display: flex; justify-content: space-between; gap: 14px; font-size: 13px; }
+    .prop-row .k { color: var(--color-muted-foreground); flex-shrink: 0; }
+    .prop-row .v { text-align: right; word-break: break-all; }
+
+    .perm-grid {
+      display: grid;
+      grid-template-columns: 70px repeat(3, 1fr);
+      gap: 8px;
+      align-items: center;
+    }
+    .perm-grid .pg-head { font-size: 12px; color: var(--color-muted-foreground); text-align: center; }
+    .perm-grid .pg-group { font-size: 13px; color: var(--color-card-foreground); }
+    .perm-bit {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 3px;
+      padding: 7px;
+      border-radius: 8px;
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      cursor: pointer;
+      font-size: 12px;
+      color: var(--color-muted-foreground);
+      transition: all 0.15s ease;
+    }
+    .perm-bit input { accent-color: var(--color-accent); cursor: pointer; }
+    .perm-preview {
+      padding: 10px 12px;
+      border-radius: 8px;
+      background: rgba(0, 0, 0, 0.3);
+      font-size: 13px;
+      color: var(--color-card-foreground);
+      text-align: center;
+    }
+
+    .editor-modal { max-width: 760px; }
+    .editor-info { display: flex; align-items: center; gap: 10px; min-width: 0; }
+    .editor-name { font-size: 13px; word-break: break-all; }
+    .editor-lang {
+      font-size: 11px;
+      padding: 2px 8px;
+      border-radius: 999px;
+      background: rgba(34, 197, 94, 0.15);
+      color: #4ADE80;
+      flex-shrink: 0;
+    }
+    .editor-body { padding: 0; height: 420px; }
+    .editor-body .CodeMirror { height: 100%; font-size: 13px; }
+    .CodeMirror { background: #0b1120 !important; color: #e2e8f0 !important; }
+    .modal-backdrop[hidden] { display: none; }
+
     @media (max-width: 1100px) {
       .terminal-col { width: 380px; }
     }
@@ -236,7 +403,72 @@
     }
   </style>
 
+  <!-- Properties modal -->
+  <div class="modal-backdrop" id="prop-modal" hidden>
+    <div class="modal" role="dialog" aria-modal="true" aria-label="文件属性">
+      <div class="modal-head"><h3>文件属性</h3><button class="modal-close" data-close="prop-modal" aria-label="关闭">✕</button></div>
+      <div class="modal-body">
+        <div class="prop-row"><span class="k">名称</span><span class="v mono" id="prop-name">-</span></div>
+        <div class="prop-row"><span class="k">大小</span><span class="v mono" id="prop-size">-</span></div>
+        <div class="prop-row"><span class="k">创建时间</span><span class="v mono" id="prop-time">-</span></div>
+        <div class="prop-row"><span class="k">权限</span><span class="v mono" id="prop-perms">-</span></div>
+        <div class="prop-row"><span class="k">属性</span><span class="v mono" id="prop-type">-</span></div>
+        <div class="prop-row"><span class="k">完整路径</span><span class="v mono" id="prop-path">-</span></div>
+      </div>
+      <div class="modal-foot"><button class="btn" data-close="prop-modal">关闭</button></div>
+    </div>
+  </div>
+
+  <!-- Permissions modal -->
+  <div class="modal-backdrop" id="perm-modal" hidden>
+    <div class="modal" role="dialog" aria-modal="true" aria-label="编辑文件权限">
+      <div class="modal-head"><h3>编辑权限</h3><button class="modal-close" data-close="perm-modal" aria-label="关闭">✕</button></div>
+      <div class="modal-body">
+        <p class="muted" id="perm-target">-</p>
+        <div class="perm-grid" id="perm-grid"></div>
+        <div class="perm-preview mono" id="perm-preview">-rw-r--r--</div>
+      </div>
+      <div class="modal-foot">
+        <button class="btn" data-close="perm-modal">取消</button>
+        <button class="btn btn-success" id="perm-save">保存权限</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Code editor modal -->
+  <div class="modal-backdrop" id="editor-modal" hidden>
+    <div class="modal editor-modal" role="dialog" aria-modal="true" aria-label="代码编辑器">
+      <div class="modal-head">
+        <div class="editor-info">
+          <span class="editor-name mono" id="editor-name">-</span>
+          <span class="editor-lang" id="editor-lang">-</span>
+        </div>
+        <button class="modal-close" data-close="editor-modal" aria-label="关闭">✕</button>
+      </div>
+      <div class="editor-body"><textarea id="editor-text"></textarea></div>
+      <div class="modal-foot">
+        <button class="btn" data-close="editor-modal">取消</button>
+        <button class="btn btn-success" id="editor-save">保存</button>
+      </div>
+    </div>
+  </div>
+
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.css" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/xml/xml.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/javascript/javascript.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/json/json.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/css/css.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/htmlmixed/htmlmixed.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/clike/clike.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/python/python.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/markdown/markdown.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/yaml/yaml.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/shell/shell.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/sql/sql.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/properties/properties.min.js"></script>
   <script src="js/charts.js"></script>
+  <script src="js/files.js"></script>
   <script src="js/admin.js"></script>
 </body>
 </html>
