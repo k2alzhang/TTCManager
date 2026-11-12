@@ -1,12 +1,6 @@
 (function () {
   const LOGO = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 3v18"/></svg>';
 
-  const serverNames = {
-    survival: "生存服务器",
-    creative: "创造服务器",
-    skyblock: "空岛服务器",
-  };
-
   // ---- server name (editable) ----
   const nameEl = document.getElementById("server-name");
   const params = new URLSearchParams(window.location.search);

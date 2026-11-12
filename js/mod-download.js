@@ -14,15 +14,7 @@
   }
 
   function toast(msg) {
-    let t = document.querySelector(".toast");
-    if (!t) {
-      t = document.createElement("div");
-      t.className = "toast";
-      document.body.appendChild(t);
-    }
-    t.textContent = msg;
-    t.classList.remove("hidden");
-    setTimeout(() => t.classList.add("hidden"), 2400);
+    if (window.toast) window.toast(msg, "success");
   }
 
   function showLoading() {
@@ -81,25 +73,32 @@
     return String(s == null ? "" : s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
   }
 
-  function install(hit, btn) {
-    const id = hit.project_id || hit.slug || "mod-" + Date.now();
-    const list = JSON.parse(localStorage.getItem("mc-panel-plugins") || "[]");
-    if (list.some((p) => p.id === id)) {
-      toast("已安装：" + hit.title);
-      return;
-    }
-    list.push({
-      id: id,
-      name: hit.title,
-      version: hit.latest_version || "?",
-      source: "Modrinth",
-      enabled: true,
-      color: "#4F46E5",
-    });
-    localStorage.setItem("mc-panel-plugins", JSON.stringify(list));
+  async function install(hit, btn) {
+    const sid = new URLSearchParams(window.location.search).get("server");
+    if (!sid) { toast("请从服务器后台的插件管理进入"); return; }
     btn.disabled = true;
-    btn.innerHTML = "<span>已安装 ✓</span>";
-    toast("已安装：" + hit.title);
+    try {
+      let url = hit.files && hit.files[0] && hit.files[0].url;
+      let filename = hit.files && hit.files[0] && hit.files[0].filename;
+      if (!url && (hit.project_id || hit.slug)) {
+        const vr = await fetch("https://api.modrinth.com/v2/project/" + (hit.project_id || hit.slug) + "/version");
+        const versions = await vr.json();
+        const v = Array.isArray(versions) && versions[0];
+        if (v && v.files && v.files[0]) { url = v.files[0].url; filename = v.files[0].filename; }
+      }
+      if (!url) { toast("未找到下载地址：" + hit.title); btn.disabled = false; return; }
+      const res = await window.api("/api/servers/" + encodeURIComponent(sid) + "/download", {
+        method: "POST",
+        body: JSON.stringify({ vendor: "plugin", target: "plugins", url, filename }),
+      });
+      const d = await res.json();
+      if (d.error) { toast(d.error); btn.disabled = false; return; }
+      btn.innerHTML = "<span>已安装 ✓</span>";
+      toast("已安装：" + hit.title);
+    } catch (e) {
+      toast(e.message || "安装失败");
+      btn.disabled = false;
+    }
   }
 
   searchBtn.addEventListener("click", search);

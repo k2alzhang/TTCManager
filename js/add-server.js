@@ -179,10 +179,9 @@
   uploadAdd.addEventListener("click", () => {
     if (!selectedFile || !uploadName.value.trim()) return;
     addServer({
-      id: "upload-" + Date.now(),
       name: uploadName.value.trim(),
       version: selectedFile.name.replace(/\.jar$/i, ""),
-      core: "本地核心",
+      type: "vanilla",
     });
   });
 
@@ -266,22 +265,35 @@
   downloadAdd.addEventListener("click", () => {
     if (!selectedCore || !selectedVersion) return;
     const c = CORES[selectedCore];
-    const name = c.name + " " + selectedVersion;
-    addServer({
-      id: "dl-" + Date.now(),
-      name: name,
-      version: selectedVersion,
-      core: c.name,
-    });
+    addServer(
+      { name: c.name + " " + selectedVersion, version: selectedVersion, type: selectedCore },
+      selectedCore === "fabric" ? null : { vendor: selectedCore, version: selectedVersion, target: "server" }
+    );
   });
 
-  function addServer(server) {
-    server.status = "offline";
-    server.players = "0 / 20";
-    const list = JSON.parse(localStorage.getItem("mc-panel-servers") || "[]");
-    list.push(server);
-    localStorage.setItem("mc-panel-servers", JSON.stringify(list));
-    window.location.href = "index.html";
+  async function addServer(server, downloadMeta) {
+    try {
+      const res = await window.api("/api/servers", {
+        method: "POST",
+        body: JSON.stringify({ name: server.name, type: server.type, version: server.version }),
+      });
+      const data = await res.json();
+      if (!res.ok || data.error) {
+        window.toast && window.toast(data.error || "创建失败", "error");
+        return;
+      }
+      if (downloadMeta) {
+        const d = await window.api("/api/servers/" + data.id + "/download", {
+          method: "POST",
+          body: JSON.stringify(downloadMeta),
+        });
+        const dj = await d.json();
+        if (dj.error) window.toast && window.toast("已创建，但核心下载失败: " + dj.error, "warn");
+      }
+      window.location.href = "index.html";
+    } catch (e) {
+      window.toast && window.toast(e.message || "创建失败", "error");
+    }
   }
 
   renderCoreCards();

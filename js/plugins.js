@@ -1,16 +1,30 @@
 (function () {
   "use strict";
 
-  const defaults = [
-    { id: "essentials", name: "EssentialsX", version: "2.20.1", source: "Modrinth", enabled: true, color: "#4F46E5" },
-    { id: "luckperms", name: "LuckPerms", version: "5.4.1", source: "Modrinth", enabled: true, color: "#38BDF8" },
-    { id: "viaversion", name: "ViaVersion", version: "5.2.1", source: "Modrinth", enabled: true, color: "#A78BFA" },
-    { id: "worldedit", name: "WorldEdit", version: "7.3.0", source: "CurseForge", enabled: true, color: "#FBBF24" },
-    { id: "coreprotect", name: "CoreProtect", version: "22.3", source: "Modrinth", enabled: false, color: "#F472B6" },
-  ];
-  const stored = JSON.parse(localStorage.getItem("mc-panel-plugins") || "[]");
-  const storedIds = new Set(stored.map((p) => p.id));
-  const plugins = stored.concat(defaults.filter((d) => !storedIds.has(d.id)));
+  const sid = new URLSearchParams(window.location.search).get("server");
+  let plugins = [];
+  const COLORS = ["#4F46E5", "#38BDF8", "#A78BFA", "#FBBF24", "#F472B6", "#34D399"];
+
+  async function loadPlugins() {
+    if (!sid) return;
+    try {
+      const res = await window.api("/api/servers/" + encodeURIComponent(sid) + "/files?path=" + encodeURIComponent("plugins"));
+      const entries = await res.json();
+      plugins = (Array.isArray(entries) ? entries : [])
+        .filter((e) => e.type === "file" && /\.jar$/i.test(e.name))
+        .map((e, i) => ({
+          id: e.name,
+          name: e.name.replace(/\.jar$/i, ""),
+          version: "—",
+          source: "plugins/",
+          enabled: true,
+          color: COLORS[i % COLORS.length],
+        }));
+      render();
+    } catch (e) {
+      window.toast && window.toast(e.message || "加载失败", "error");
+    }
+  }
 
   const body = document.getElementById("plugin-body");
   const empty = document.getElementById("plugin-empty");
@@ -56,9 +70,7 @@
       toggle.title = p.enabled ? "禁用" : "启用";
       toggle.innerHTML = ICONS.toggle;
       toggle.addEventListener("click", () => {
-        p.enabled = !p.enabled;
-        save();
-        render();
+        window.toast && window.toast("插件启停需在服务器控制台执行 /plugin", "info");
       });
       const del = document.createElement("button");
       del.className = "btn btn-ghost";
@@ -67,10 +79,10 @@
       del.innerHTML = ICONS.del;
       del.addEventListener("click", () => {
         if (!confirm("确定卸载 " + p.name + " 吗？")) return;
-        const i = plugins.indexOf(p);
-        if (i >= 0) plugins.splice(i, 1);
-        save();
-        render();
+        window.api("/api/servers/" + encodeURIComponent(sid) + "/files/delete", { method: "POST", body: JSON.stringify({ path: "plugins/" + p.id }) })
+          .then((r) => r.json())
+          .then((d) => { if (d.error) { window.toast && window.toast(d.error, "error"); return; } loadPlugins(); })
+          .catch((e) => window.toast && window.toast(e.message || "卸载失败", "error"));
       });
       opsCell.append(toggle, del);
 
@@ -79,14 +91,11 @@
     });
   }
 
-  function save() {
-    localStorage.setItem("mc-panel-plugins", JSON.stringify(plugins));
-  }
-
   search.addEventListener("input", render);
   document.getElementById("dl-plugin").addEventListener("click", () => {
-    window.location.href = "mod-download.html";
+    window.location.href = "mod-download.html?server=" + encodeURIComponent(sid || "");
   });
 
   render();
+  loadPlugins();
 })();

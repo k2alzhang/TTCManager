@@ -1,30 +1,9 @@
 (function () {
   "use strict";
 
-  // ---- mock file tree ----
-  const tree = [
-    { name: "world", type: "dir", perms: "drwxr-xr-x", created: "2026-11-01 09:12", children: [
-      { name: "region", type: "dir", perms: "drwxr-xr-x", created: "2026-11-01 09:12", children: [
-        { name: "r.0.0.mca", type: "file", perms: "-rw-r--r--", size: "1.4 MB", created: "2026-11-05 18:03", lang: "bin" },
-        { name: "r.0.1.mca", type: "file", perms: "-rw-r--r--", size: "1.1 MB", created: "2026-11-05 18:03", lang: "bin" },
-      ] },
-      { name: "level.dat", type: "file", perms: "-rw-r--r--", size: "3.8 MB", created: "2026-11-05 18:02", lang: "bin" },
-    ] },
-    { name: "plugins", type: "dir", perms: "drwxr-xr-x", created: "2026-11-02 10:20", children: [
-      { name: "Essentials", type: "dir", perms: "drwxr-xr-x", created: "2026-11-02 10:20", children: [] },
-      { name: "LuckPerms", type: "dir", perms: "drwxr-xr-x", created: "2026-11-02 10:21", children: [] },
-    ] },
-    { name: "logs", type: "dir", perms: "drwxr-xr-x", created: "2026-11-03 08:00", children: [
-      { name: "latest.log", type: "file", perms: "-rw-r--r--", size: "214 KB", created: "2026-11-12 22:10", content: "[10:04:31 INFO]: Starting minecraft server version 1.21.1\n[10:04:33 INFO]: Loading properties\n[10:04:35 INFO]: Preparing level \"world\"\n[10:04:41 INFO]: Done (4.816s)!", lang: "log" },
-    ] },
-    { name: "server.properties", type: "file", perms: "-rw-r--r--", size: "2.1 KB", created: "2026-11-01 09:10", content: "motd=A Minecraft Server\nserver-port=25565\nmax-players=20\nonline-mode=true\nview-distance=10", lang: "properties" },
-    { name: "config.yml", type: "file", perms: "-rw-r--r--", size: "1.6 KB", created: "2026-11-02 10:15", content: "server:\n  port: 25565\n  name: survival\nsettings:\n  auto-restart: true", lang: "yaml" },
-    { name: "start.sh", type: "file", perms: "-rwxr-xr-x", size: "1.2 KB", created: "2026-11-01 09:10", content: "#!/bin/bash\njava -Xms1G -Xmx2G -jar paper.jar nogui", lang: "shell" },
-    { name: "paper.jar", type: "file", perms: "-rw-r--r--", size: "48.2 MB", created: "2026-11-01 09:09", lang: "bin" },
-    { name: "backup.zip", type: "file", perms: "-rw-r--r--", size: "6.4 MB", created: "2026-11-10 02:30", lang: "zip" },
-    { name: "eula.txt", type: "file", perms: "-rw-r--r--", size: "82 B", created: "2026-11-01 09:10", content: "eula=true", lang: "properties" },
-  ];
-
+  // ---- real file listing ----
+  const sid = new URLSearchParams(window.location.search).get("server");
+  let tree = [];
   let path = [];
 
   // ---- dom ----
@@ -49,11 +28,32 @@
 
   // ---- navigation ----
   function currentDir() {
-    let node = tree;
-    for (const seg of path) {
-      node = node.find((n) => n.name === seg).children;
+    return tree;
+  }
+
+  function isBinaryName(name) {
+    return /\.(jar|mca|dat|zip|gz|tar|7z|png|jpg|ogg|class|nbt|schem)$/i.test(name);
+  }
+
+  async function loadDir() {
+    if (!sid) return;
+    const rel = path.join("/");
+    try {
+      const res = await window.api("/api/servers/" + encodeURIComponent(sid) + "/files?path=" + encodeURIComponent(rel));
+      const entries = await res.json();
+      tree = (Array.isArray(entries) ? entries : []).map((e) => ({
+        name: e.name,
+        type: e.type,
+        size: fmtSize(e.size),
+        mtime: e.mtime,
+        created: e.mtime ? new Date(e.mtime).toLocaleString("zh-CN", { hour12: false }) : "—",
+        perms: e.type === "dir" ? "drwxr-xr-x" : "-rw-r--r--",
+        lang: isBinaryName(e.name) ? "bin" : "text",
+      }));
+      render();
+    } catch (e) {
+      window.toast && window.toast(e.message || "加载失败", "error");
     }
-    return node;
   }
 
   function makeCrumb(text, isCurrent, goTo) {
@@ -75,13 +75,13 @@
   function render() {
     const dir = currentDir();
     breadcrumb.innerHTML = "";
-    breadcrumb.appendChild(makeCrumb("/", path.length === 0, () => { path = []; render(); }));
+    breadcrumb.appendChild(makeCrumb("/", path.length === 0, () => { path = []; loadDir(); }));
     path.forEach((seg, i) => {
       const sep = document.createElement("span");
       sep.className = "sep";
       sep.textContent = "/";
       breadcrumb.appendChild(sep);
-      breadcrumb.appendChild(makeCrumb(seg, i === path.length - 1, () => { path = path.slice(0, i + 1); render(); }));
+      breadcrumb.appendChild(makeCrumb(seg, i === path.length - 1, () => { path = path.slice(0, i + 1); loadDir(); }));
     });
 
     body.innerHTML = "";
@@ -235,11 +235,15 @@
   function openNode(node) {
     if (node.type === "dir") {
       path.push(node.name);
-      render();
+      loadDir();
     } else if (isBinary(node)) {
       mockOp("二进制文件，无法作为文本编辑：" + node.name);
     } else {
-      openEditor(node);
+      const rel = path.concat(node.name).join("/");
+      window.api("/api/servers/" + encodeURIComponent(sid) + "/files/read", { method: "POST", body: JSON.stringify({ path: rel }) })
+        .then((r) => r.json())
+        .then((d) => { node.content = d.content || ""; openEditor(node); })
+        .catch((e) => mockOp(e.message || "读取失败"));
     }
   }
 
@@ -257,47 +261,52 @@
 
   function removeNode(node) {
     if (!confirm("确定删除 " + node.name + " 吗？")) return;
-    const list = path.length === 0 ? tree : currentDir();
-    const idx = list.findIndex((n) => n.name === node.name);
-    if (idx >= 0) list.splice(idx, 1);
-    render();
+    const rel = path.concat(node.name).join("/");
+    window.api("/api/servers/" + encodeURIComponent(sid) + "/files/delete", { method: "POST", body: JSON.stringify({ path: rel }) })
+      .then((r) => r.json())
+      .then((d) => { if (d.error) { mockOp(d.error); return; } loadDir(); })
+      .catch((e) => mockOp(e.message || "删除失败"));
   }
 
   function renameNode(node) {
-    const name = prompt("输入新名称", node.name);
-    if (!name || !name.trim()) return;
-    const clean = name.trim();
-    if (clean === node.name) return;
-    const dir = currentDir();
-    if (dir.some((n) => n !== node && n.name === clean)) {
-      alert("已存在同名文件或文件夹：" + clean);
-      return;
-    }
-    node.name = clean;
-    mockOp("已重命名为 " + clean);
-    render();
+    mockOp("重命名需在服务器上操作");
   }
 
   function mockOp(msg) {
-    if (window.panelLog) window.panelLog(msg, "info");
+    if (window.toast) window.toast(msg, "info");
   }
 
   // ---- upload / new folder ----
   document.getElementById("fm-upload").addEventListener("click", () => fileInput.click());
   fileInput.addEventListener("change", () => {
-    const now = new Date().toLocaleString("zh-CN", { hour12: false });
-    Array.from(fileInput.files).forEach((f) => {
-      currentDir().push({ name: f.name, type: "file", perms: "-rw-r--r--", size: fmtSize(f.size), created: now, content: "// 上传的文件内容", lang: detectLang(f.name) });
-    });
+    const f = fileInput.files[0];
+    if (f) {
+      const reader = new FileReader();
+      const prog = window.toastProgress ? window.toastProgress("上传中：" + f.name, "info") : null;
+      reader.onload = () => {
+        const rel = path.concat(f.name).join("/");
+        window.api("/api/servers/" + encodeURIComponent(sid) + "/files/write", { method: "POST", body: JSON.stringify({ path: rel, content: reader.result }) })
+          .then((r) => r.json())
+          .then((d) => {
+            if (prog) prog.set(100);
+            if (d.error) { mockOp(d.error); return; }
+            if (prog) prog.done("已上传：" + f.name);
+            loadDir();
+          })
+          .catch((e) => mockOp(e.message || "上传失败"));
+      };
+      reader.readAsText(f);
+    }
     fileInput.value = "";
-    render();
   });
   document.getElementById("fm-newfolder").addEventListener("click", () => {
     const name = prompt("输入文件夹名称");
     if (name) {
-      const now = new Date().toLocaleString("zh-CN", { hour12: false });
-      currentDir().push({ name, type: "dir", perms: "drwxr-xr-x", created: now, children: [] });
-      render();
+      const rel = path.concat(name).join("/");
+      window.api("/api/servers/" + encodeURIComponent(sid) + "/files/mkdir", { method: "POST", body: JSON.stringify({ path: rel }) })
+        .then((r) => r.json())
+        .then((d) => { if (d.error) { mockOp(d.error); return; } loadDir(); })
+        .catch((e) => mockOp(e.message || "创建失败"));
     }
   });
 
@@ -438,9 +447,18 @@
   }
 
   document.getElementById("editor-save").addEventListener("click", () => {
-    if (editorNode) editorNode.content = editor.getValue();
-    mockOp("已保存 " + editorNode.name);
-    closeModal(editorModal);
+    if (!editorNode) return;
+    editorNode.content = editor.getValue();
+    const rel = path.concat(editorNode.name).join("/");
+    window.api("/api/servers/" + encodeURIComponent(sid) + "/files/write", { method: "POST", body: JSON.stringify({ path: rel, content: editorNode.content }) })
+      .then((r) => r.json())
+      .then((d) => {
+        if (d.error) { mockOp(d.error); return; }
+        mockOp("已保存 " + editorNode.name);
+        closeModal(editorModal);
+        loadDir();
+      })
+      .catch((e) => mockOp(e.message || "保存失败"));
   });
 
   // ---- modal helpers ----
@@ -465,4 +483,5 @@
   });
 
   render();
+  loadDir();
 })();
