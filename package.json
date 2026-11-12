@@ -1,0 +1,26 @@
+{
+  "name": "mc-panel",
+  "version": "0.1.0",
+  "description": "Minecraft server management panel — Node.js, cross-platform (Windows/macOS/Linux)",
+  "license": "MIT",
+  "bin": {
+    "mc-panel": "server.js"
+  },
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "test": "node --test test/",
+    "build": "node build.js"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "ws": "^8.18.0",
+    "basic-ftp": "^5.0.5",
+    "ssh2-sftp-client": "^11.0.0"
+  },
+  "devDependencies": {
+    "pkg": "^5.8.1"
+  }
+}
