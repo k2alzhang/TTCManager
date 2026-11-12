@@ -26,6 +26,9 @@ npm install
 npm run build     # 生成 dist/ 下的 win-x64 / mac-x64 / linux-x64 可执行文件
 ```
 
+> ⚠️ 需在桌面系统（Windows / macOS / Linux）上执行。pkg 只能为当前宿主平台打包，
+> 无法在 Android / Termux 上交叉生成桌面产物（会报 "only for android"）。
+
 端用户只需安装 JDK，双击可执行文件即可运行面板，无需 Node。
 
 ## 首次使用
