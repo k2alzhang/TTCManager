@@ -87,10 +87,26 @@
             <div class="fm-empty muted" id="fm-empty" hidden>此文件夹为空。</div>
           </div>
         </div>
-        <div class="view placeholder" data-pane="mods" hidden>
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
-          <h2>模组/插件管理</h2>
-          <p class="muted">此页面将在后续迭代中实现。</p>
+        <div class="view" data-pane="mods" hidden>
+          <div class="pane-head">
+            <h1 class="pane-title">模组/插件管理</h1>
+            <p class="muted">已自动识别 <span id="plugin-count" class="mono">0</span> 个插件。</p>
+          </div>
+          <div class="fm-toolbar">
+            <input class="text-input plugin-search" id="plugin-search" type="search" placeholder="搜索已安装插件…" aria-label="搜索已安装插件" />
+            <div class="fm-actions">
+              <button class="btn btn-success" id="dl-plugin"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg><span>下载模组/插件</span></button>
+            </div>
+          </div>
+          <div class="card fm-list-wrap">
+            <table class="fm-table">
+              <thead>
+                <tr><th>名称</th><th>版本</th><th>来源</th><th>状态</th><th class="fm-ops-th">操作</th></tr>
+              </thead>
+              <tbody id="plugin-body"></tbody>
+            </table>
+            <div class="fm-empty muted" id="plugin-empty" hidden>未安装插件，点右上角下载。</div>
+          </div>
         </div>
         <div class="view placeholder" data-pane="players" hidden>
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>
@@ -323,6 +339,10 @@
     .ctx-sep { height: 1px; background: rgba(255, 255, 255, 0.08); margin: 4px 6px; }
     .ctx-menu[hidden] { display: none; }
 
+    /* ---------- Plugins ---------- */
+    .plugin-search { max-width: 260px; }
+    .plugin-icon { width: 16px; height: 16px; border-radius: 4px; flex-shrink: 0; }
+
     /* ---------- Modals ---------- */
     .modal-backdrop {
       position: fixed;
@@ -519,6 +539,7 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/properties/properties.min.js"></script>
   <script src="js/charts.js"></script>
   <script src="js/files.js"></script>
+  <script src="js/plugins.js"></script>
   <script src="js/admin.js"></script>
 </body>
 </html>
