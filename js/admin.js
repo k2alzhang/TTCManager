@@ -243,7 +243,6 @@
   }
 
   // ================= Player management =================
-  const PLAYER_KEY = "mc-panel-players";
   const playerBody = document.getElementById("player-body");
   const playerEmpty = document.getElementById("player-empty");
   const playerFilter = document.getElementById("player-filter");
@@ -255,28 +254,32 @@
   const reasonInput = document.getElementById("reason-input");
   const reasonOk = document.getElementById("reason-ok");
 
-  let players = loadPlayers();
+  let players = [];
   let playerState = "all";
   let pendingReason = null;
 
-  function loadPlayers() {
-    try {
-      const v = JSON.parse(localStorage.getItem(PLAYER_KEY));
-      if (Array.isArray(v) && v.length) return v;
-    } catch (e) {}
-    const seed = [
-      { name: "Steve", uuid: "069a79f4-44e9-4726-a5be-fca90e38aaf5", online: true, role: "admin", black: false, reason: "", ip: "192.168.1.10", first: "2026-11-01 09:12", last: "2026-11-12 01:20", playMin: 3420 },
-      { name: "Alex", uuid: "853c80e3-6a4e-4a1b-9d0f-1c2e3a4b5c6d", online: true, role: "player", black: false, reason: "", ip: "192.168.1.22", first: "2026-11-03 14:05", last: "2026-11-12 01:18", playMin: 1680 },
-      { name: "Herobrine", uuid: "7d2e8f90-1a3b-4c5d-8e6f-0a1b2c3d4e5f", online: true, role: "player", black: false, reason: "", ip: "10.0.0.45", first: "2026-11-05 20:44", last: "2026-11-12 01:19", playMin: 905 },
-      { name: "Ender", uuid: "a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d", online: false, role: "player", black: true, reason: "使用作弊模组", ip: "172.16.0.7", first: "2026-10-28 11:30", last: "2026-11-08 23:41", playMin: 2310 },
-      { name: "CreeperKing", uuid: "b2c3d4e5-f6a7-4b8c-9d0e-1f2a3b4c5d6e", online: false, role: "player", black: false, reason: "", ip: "192.168.1.31", first: "2026-11-06 10:02", last: "2026-11-11 18:26", playMin: 640 },
-      { name: "Notch", uuid: "c3d4e5f6-a7b8-4c9d-8e0f-2a3b4c5d6e7f", online: false, role: "admin", black: false, reason: "", ip: "192.168.1.2", first: "2026-10-20 08:00", last: "2026-11-10 07:15", playMin: 5100 },
-    ];
-    localStorage.setItem(PLAYER_KEY, JSON.stringify(seed));
-    return seed;
+  function mapPlayer(p) {
+    return {
+      name: p.name,
+      uuid: p.uuid || "—",
+      online: Boolean(p.online),
+      role: p.admin ? "admin" : "player",
+      black: Boolean(p.banned),
+      reason: p.bannedReason || "",
+      ip: "—",
+      first: p.created || "—",
+      last: "—",
+      playMin: 0,
+    };
   }
-  function savePlayers() {
-    localStorage.setItem(PLAYER_KEY, JSON.stringify(players));
+  function refreshPlayers() {
+    window.api("/api/players")
+      .then((r) => r.json())
+      .then((list) => {
+        players = (Array.isArray(list) ? list : []).map(mapPlayer);
+        renderPlayers();
+      })
+      .catch((e) => window.toast && window.toast(e.message || "加载失败", "error"));
   }
 
   const ICONS = {
@@ -396,36 +399,40 @@
   }
 
   function toggleAdmin(p) {
-    p.role = p.role === "admin" ? "player" : "admin";
-    savePlayers();
-    window.toast(p.name + " 已被" + (p.role === "admin" ? "设为管理员" : "取消管理员"), "success");
-    renderPlayers();
+    const next = p.role !== "admin";
+    window.api("/api/players/" + encodeURIComponent(p.name), { method: "PATCH", body: JSON.stringify({ admin: next }) })
+      .then((r) => r.json())
+      .then((d) => {
+        if (d.error) { window.toast && window.toast(d.error, "error"); return; }
+        window.toast(p.name + " 已被" + (next ? "设为管理员" : "取消管理员"), "success");
+        refreshPlayers();
+      })
+      .catch((e) => window.toast && window.toast(e.message || "操作失败", "error"));
   }
 
   function toggleBlack(p) {
     if (p.black) {
-      p.black = false;
-      p.reason = "";
-      savePlayers();
-      window.toast(p.name + " 已解除拉黑", "success");
-      renderPlayers();
+      window.api("/api/players/" + encodeURIComponent(p.name), { method: "PATCH", body: JSON.stringify({ banned: false }) })
+        .then((r) => r.json())
+        .then((d) => { if (d.error) { window.toast && window.toast(d.error, "error"); return; } window.toast(p.name + " 已解除拉黑", "success"); refreshPlayers(); })
+        .catch((e) => window.toast && window.toast(e.message || "操作失败", "error"));
     } else {
       askReason("拉黑玩家：" + p.name, (r) => {
-        p.black = true;
-        p.reason = r;
-        savePlayers();
-        window.toast(p.name + " 已被拉黑" + (r ? "（理由：" + r + "）" : ""), "error");
-        renderPlayers();
+        window.api("/api/players/" + encodeURIComponent(p.name), { method: "PATCH", body: JSON.stringify({ banned: true, bannedReason: r }) })
+          .then((res) => res.json())
+          .then((d) => { if (d.error) { window.toast && window.toast(d.error, "error"); return; } window.toast(p.name + " 已被拉黑" + (r ? "（理由：" + r + "）" : ""), "error"); refreshPlayers(); })
+          .catch((e) => window.toast && window.toast(e.message || "操作失败", "error"));
       });
     }
   }
 
   function kickPlayer(p) {
     askReason("踢出玩家：" + p.name, (r) => {
-      p.online = false;
-      savePlayers();
-      window.toast(p.name + " 已被踢出游戏" + (r ? "（理由：" + r + "）" : ""), "error");
-      renderPlayers();
+      const cmd = "kick " + p.name + (r ? " " + r : "");
+      window.api("/api/servers/" + encodeURIComponent(sid) + "/command", { method: "POST", body: JSON.stringify({ command: cmd }) })
+        .then((res) => res.json())
+        .then((d) => { if (d.error) { window.toast && window.toast(d.error, "error"); return; } window.toast(p.name + " 已被踢出游戏" + (r ? "（理由：" + r + "）" : ""), "error"); })
+        .catch((e) => window.toast && window.toast(e.message || "操作失败", "error"));
     });
   }
 
@@ -470,9 +477,9 @@
   });
 
   document.getElementById("player-reload").addEventListener("click", () => {
-    renderPlayers();
+    refreshPlayers();
     window.toast("玩家列表已刷新", "info");
   });
 
-  renderPlayers();
+  refreshPlayers();
 })();

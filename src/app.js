@@ -7,6 +7,7 @@ const { listServers, getServer, updateServer, addServer } = require("./servers.j
 const { loadMasterKey } = require("./crypto.js");
 const { getBackend } = require("./files.js");
 const { getConnection, setConnection } = require("./connections.js");
+const { listPlayers, addPlayer, setAdmin, setBanned, setPlayerPassword, removePlayer } = require("./players.js");
 
 const WEB_ROOT = path.join(__dirname, "..");
 
@@ -162,6 +163,39 @@ function createApp({ dataDir, manager, downloader }) {
           if (req.method === "PUT") {
             const body = await readBody(req);
             return json(res, 200, updateServer(dataDir, sm[1], body));
+          }
+        }
+        if (p === "/api/players" && req.method === "GET") {
+          if (!verifyToken(dataDir, tokenFrom(req))) return json(res, 401, { error: "未登录" });
+          return json(res, 200, listPlayers(dataDir));
+        }
+        if (p === "/api/players" && req.method === "POST") {
+          if (!verifyToken(dataDir, tokenFrom(req))) return json(res, 401, { error: "未登录" });
+          const body = await readBody(req);
+          try {
+            return json(res, 200, addPlayer(dataDir, body));
+          } catch (e) {
+            return json(res, 400, { error: String(e.message || e) });
+          }
+        }
+        const pm = p.match(/^\/api\/players\/([^/]+)$/);
+        if (pm) {
+          if (!verifyToken(dataDir, tokenFrom(req))) return json(res, 401, { error: "未登录" });
+          const name = decodeURIComponent(pm[1]);
+          if (req.method === "PATCH") {
+            const body = await readBody(req);
+            try {
+              if (body.admin !== undefined) return json(res, 200, setAdmin(dataDir, name, body.admin));
+              if (body.banned !== undefined) return json(res, 200, setBanned(dataDir, name, body.banned, body.bannedReason));
+              if (body.password !== undefined) return json(res, 200, setPlayerPassword(dataDir, name, body.password));
+              return json(res, 400, { error: "未知字段" });
+            } catch (e) {
+              return json(res, 400, { error: String(e.message || e) });
+            }
+          }
+          if (req.method === "DELETE") {
+            removePlayer(dataDir, name);
+            return json(res, 200, { ok: true });
           }
         }
         return json(res, 404, { error: "not found" });
