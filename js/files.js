@@ -37,6 +37,7 @@
     dir: '<svg class="dir-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>',
     file: '<svg class="file-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V9z"/><path d="M13 3v6h6"/></svg>',
     edit: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>',
+    rename: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 17l9-9M13 6l5 5-8 8H5v-5z"/><path d="M18 3l3 3"/></svg>',
     open: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>',
     prop: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.9-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1-1.5 1.7 1.7 0 0 0-1.9.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.9 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1 1.7 1.7 0 0 0-.3-1.9l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.9.3h.1a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.9-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.9v.1a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>',
     dl: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>',
@@ -149,6 +150,7 @@
     const ops = [];
     if (isDir) ops.push({ key: "open", label: "打开", icon: ICONS.open, fn: () => openNode(node) });
     else ops.push({ key: "edit", label: "编辑", icon: ICONS.edit, fn: () => openNode(node) });
+    ops.push({ key: "rename", label: "重命名", icon: ICONS.rename, fn: () => renameNode(node) });
     if (!isDir && isArchive(node.name)) ops.push({ key: "unzip", label: "解压", icon: ICONS.unzip, fn: () => mockOp("正在解压 " + node.name + " …"), extra: true });
     ops.push({ key: "prop", label: "属性", icon: ICONS.prop, fn: () => showProps(node), extra: true });
     ops.push({ key: "perm", label: "权限", icon: ICONS.perm, fn: () => showPerms(node), extra: true });
@@ -258,6 +260,21 @@
     const list = path.length === 0 ? tree : currentDir();
     const idx = list.findIndex((n) => n.name === node.name);
     if (idx >= 0) list.splice(idx, 1);
+    render();
+  }
+
+  function renameNode(node) {
+    const name = prompt("输入新名称", node.name);
+    if (!name || !name.trim()) return;
+    const clean = name.trim();
+    if (clean === node.name) return;
+    const dir = currentDir();
+    if (dir.some((n) => n !== node && n.name === clean)) {
+      alert("已存在同名文件或文件夹：" + clean);
+      return;
+    }
+    node.name = clean;
+    mockOp("已重命名为 " + clean);
     render();
   }
 
