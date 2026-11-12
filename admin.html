@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>服务器管理后台</title>
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+  <div class="app">
+    <header class="topbar">
+      <div class="topbar-title">
+        <span class="icon" id="logo-icon"></span>
+        <span class="name" id="server-name" contenteditable="true" spellcheck="false">我的服务器</span>
+      </div>
+      <div class="topbar-actions" id="server-actions">
+        <button class="btn btn-success" data-ctl="start"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg><span>开启服务器</span></button>
+        <button class="btn btn-warn" data-ctl="stop"><svg viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="6" width="12" height="12" rx="1"/></svg><span>关闭服务器</span></button>
+        <button class="btn btn-danger" data-ctl="kill"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6L6 18M6 6l12 12"/></svg><span>强制终止</span></button>
+      </div>
+    </header>
+
+    <div class="app-body">
+      <aside class="sidebar">
+        <div class="sidebar-label">功能区</div>
+        <div class="nav-item active" data-view="home">
+          <span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><path d="M9 22V12h6v10"/></svg></span>
+          首页
+        </div>
+        <div class="nav-item" data-view="files">
+          <span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg></span>
+          文件管理
+        </div>
+        <div class="nav-item" data-view="mods">
+          <span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg></span>
+          模组/插件管理
+        </div>
+        <div class="nav-item" data-view="players">
+          <span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg></span>
+          玩家列表管理
+        </div>
+      </aside>
+
+      <section class="terminal-col">
+        <div class="terminal-head">
+          <span class="dot"></span>
+          <span class="terminal-title">控制台日志</span>
+          <span class="terminal-status mono" id="term-status">运行中</span>
+        </div>
+        <div class="terminal" id="terminal" aria-live="polite"></div>
+        <div class="cmd-bar">
+          <span class="cmd-prompt mono">></span>
+          <input id="cmd-input" class="cmd-input mono" type="text" placeholder="输入服务器指令，回车发送…" autocomplete="off" spellcheck="false" aria-label="服务器指令输入框" />
+        </div>
+      </section>
+
+      <main class="main">
+        <div class="view" data-pane="home">
+          <div class="pane-head">
+            <h1 class="pane-title">实时监控</h1>
+            <p class="muted">服务器运行状态实时更新，每 1 秒刷新。</p>
+          </div>
+          <div class="metrics" id="metrics"></div>
+          <div class="props" id="props"></div>
+        </div>
+
+        <div class="view placeholder" data-pane="files" hidden>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>
+          <h2>文件管理</h2>
+          <p class="muted">此页面将在后续迭代中实现。</p>
+        </div>
+        <div class="view placeholder" data-pane="mods" hidden>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+          <h2>模组/插件管理</h2>
+          <p class="muted">此页面将在后续迭代中实现。</p>
+        </div>
+        <div class="view placeholder" data-pane="players" hidden>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+          <h2>玩家列表管理</h2>
+          <p class="muted">此页面将在后续迭代中实现。</p>
+        </div>
+      </main>
+    </div>
+  </div>
+
+  <style>
+    .app-body { position: relative; }
+    .terminal-col {
+      width: 500px;
+      flex-shrink: 0;
+      display: flex;
+      flex-direction: column;
+      border-right: 1px solid var(--color-border);
+      background: rgba(11, 17, 32, 0.45);
+      min-height: 0;
+    }
+    .terminal-head {
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      padding: 12px 16px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+      font-size: 13px;
+      font-weight: 500;
+    }
+    .terminal-head .dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--color-accent);
+      box-shadow: 0 0 8px var(--color-accent);
+      animation: pulse 2s infinite;
+    }
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.35; }
+    }
+    .terminal-title { flex: 1; }
+    .terminal-status { font-size: 11.5px; color: var(--color-muted-foreground); }
+    .terminal {
+      flex: 1;
+      overflow-y: auto;
+      padding: 12px 16px;
+      font-family: var(--font-mono);
+      font-size: 12.5px;
+      line-height: 1.7;
+      color: #CBD5E1;
+      min-height: 0;
+    }
+    .terminal .line { white-space: pre-wrap; word-break: break-all; }
+    .terminal .line .t { color: var(--color-muted-foreground); }
+    .terminal .line.info { color: #7DD3FC; }
+    .terminal .line.warn { color: #FBBF24; }
+    .terminal .line.error { color: #F87171; }
+    .terminal .line.cmd { color: #F8FAFC; }
+    .terminal .line.cmd .p { color: var(--color-accent); }
+    .cmd-bar {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      height: 34px;
+      border-top: 1px solid rgba(255, 255, 255, 0.07);
+      padding: 0 16px;
+      background: rgba(11, 17, 32, 0.6);
+    }
+    .cmd-prompt { color: var(--color-accent); font-weight: 600; }
+    .cmd-input {
+      flex: 1;
+      background: transparent;
+      border: none;
+      outline: none;
+      color: var(--color-card-foreground);
+      font-size: 13px;
+      line-height: 1;
+    }
+    .cmd-input::placeholder { color: rgba(148, 163, 184, 0.6); }
+
+    .pane-head { margin-bottom: 18px; }
+    .pane-title { font-size: 22px; font-weight: 700; letter-spacing: -0.01em; }
+
+    .metrics {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+      gap: 14px;
+    }
+    .metric-card { display: flex; flex-direction: column; gap: 10px; }
+    .metric-card .m-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+    }
+    .metric-card .m-label { font-size: 13px; color: var(--color-muted-foreground); }
+    .metric-card .m-value {
+      font-family: var(--font-mono);
+      font-size: 20px;
+      font-weight: 600;
+      color: var(--color-card-foreground);
+      font-variant-numeric: tabular-nums;
+    }
+    .metric-card .m-value small { font-size: 12px; color: var(--color-muted-foreground); font-weight: 400; }
+    .metric-card canvas { width: 100%; height: 52px; display: block; }
+
+    .props {
+      margin-top: 18px;
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+      gap: 14px;
+    }
+    .prop-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      padding: 12px 14px;
+    }
+    .prop-item .k { font-size: 13px; color: var(--color-muted-foreground); }
+    .prop-item .v { font-family: var(--font-mono); font-size: 13px; color: var(--color-card-foreground); }
+
+    .placeholder {
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      text-align: center;
+      color: var(--color-muted-foreground);
+    }
+    .placeholder svg { width: 44px; height: 44px; opacity: 0.6; }
+    .placeholder h2 { font-size: 18px; color: var(--color-card-foreground); }
+
+    @media (max-width: 1100px) {
+      .terminal-col { width: 380px; }
+    }
+    @media (max-width: 860px) {
+      .app { height: auto; min-height: 100vh; overflow: auto; }
+      .app-body { flex-direction: column; }
+      .sidebar {
+        width: 100%;
+        flex-direction: row;
+        overflow-x: auto;
+        border-right: none;
+        border-bottom: 1px solid var(--color-border);
+        padding: 8px 10px;
+      }
+      .sidebar-label { display: none; }
+      .nav-item { white-space: nowrap; }
+      .terminal-col { width: 100%; height: 320px; border-right: none; border-bottom: 1px solid var(--color-border); }
+    }
+  </style>
+
+  <script src="js/charts.js"></script>
+  <script src="js/admin.js"></script>
+</body>
+</html>
