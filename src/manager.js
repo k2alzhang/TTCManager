@@ -44,6 +44,12 @@ class ServerManager {
     }
   }
 
+  send(id, line) {
+    const rt = this._runtimes.get(id);
+    if (!rt) throw new Error("服务器未运行");
+    rt.send(line);
+  }
+
   stop(id) {
     const rt = this._runtimes.get(id);
     if (rt) rt.stop();

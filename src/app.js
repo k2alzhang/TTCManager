@@ -107,6 +107,18 @@ function createApp({ dataDir, manager }) {
             return json(res, 200, setConnection(dataDir, id, body, key));
           }
         }
+        const cmdM = p.match(/^\/api\/servers\/([^/]+)\/command$/);
+        if (cmdM && req.method === "POST") {
+          if (!verifyToken(dataDir, tokenFrom(req))) return json(res, 401, { error: "未登录" });
+          if (!manager) return json(res, 500, { error: "运行管理器未就绪" });
+          const body = await readBody(req);
+          try {
+            manager.send(cmdM[1], body.command || "");
+            return json(res, 200, { ok: true });
+          } catch (e) {
+            return json(res, 400, { error: String(e.message || e) });
+          }
+        }
         const rm = p.match(/^\/api\/servers\/([^/]+)\/(start|stop|restart)$/);
         if (rm && req.method === "POST") {
           if (!verifyToken(dataDir, tokenFrom(req))) return json(res, 401, { error: "未登录" });

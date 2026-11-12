@@ -46,6 +46,10 @@ class ServerRuntime extends EventEmitter {
     }
   }
 
+  send(line) {
+    if (this.child) this.child.stdin.write(String(line) + "\n");
+  }
+
   stop() {
     if (!this.child) return;
     this.child.stdin.write("stop\n");
