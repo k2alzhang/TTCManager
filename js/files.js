@@ -116,28 +116,115 @@
 
     const opsCell = document.createElement("td");
     opsCell.className = "fm-ops";
-    const ops = [];
-    if (isDir) ops.push(["open", "打开", "btn-ghost", ICONS.open, () => openNode(node)]);
-    else ops.push(["edit", "编辑", "btn-ghost", ICONS.edit, () => openNode(node)]);
-    if (!isDir && isArchive(node.name)) ops.push(["unzip", "解压", "btn-ghost", ICONS.unzip, () => mockOp("正在解压 " + node.name + " …")]);
-    ops.push(["perm", "权限", "btn-ghost", ICONS.perm, () => showPerms(node)]);
-    ops.push(["prop", "属性", "btn-ghost", ICONS.prop, () => showProps(node)]);
-    ops.push(["dl", "下载", "btn-ghost", ICONS.dl, () => mockOp("开始下载 " + node.name)]);
-    ops.push(["zip", "压缩", "btn-ghost", ICONS.zip, () => mockOp("正在压缩 " + node.name)]);
-    ops.push(["del", "删除", "btn-ghost", ICONS.del, () => removeNode(node)]);
-    ops.forEach(([, label, cls, icon, fn]) => {
+    buildOps(node).forEach((op) => {
       const b = document.createElement("button");
-      b.className = "btn " + cls;
-      b.setAttribute("aria-label", label);
-      b.title = label;
-      b.innerHTML = icon;
-      b.addEventListener("click", fn);
+      b.className = "btn btn-ghost" + (op.extra ? " ops-extra" : "");
+      b.setAttribute("aria-label", op.label);
+      b.title = op.label;
+      b.innerHTML = op.icon;
+      b.addEventListener("click", (e) => {
+        e.stopPropagation();
+        op.fn();
+      });
       opsCell.appendChild(b);
     });
+    const more = document.createElement("button");
+    more.className = "btn btn-ghost ops-more";
+    more.setAttribute("aria-label", "更多操作");
+    more.title = "更多操作";
+    more.innerHTML = '<svg viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></svg>';
+    more.addEventListener("click", (e) => {
+      e.stopPropagation();
+      const r = more.getBoundingClientRect();
+      openCtxMenu(node, r.right, r.bottom + 4);
+    });
+    opsCell.appendChild(more);
 
     tr.append(nameCell, sizeCell, timeCell, permCell, opsCell);
     return tr;
   }
+
+  function buildOps(node) {
+    const isDir = node.type === "dir";
+    const ops = [];
+    if (isDir) ops.push({ key: "open", label: "打开", icon: ICONS.open, fn: () => openNode(node) });
+    else ops.push({ key: "edit", label: "编辑", icon: ICONS.edit, fn: () => openNode(node) });
+    if (!isDir && isArchive(node.name)) ops.push({ key: "unzip", label: "解压", icon: ICONS.unzip, fn: () => mockOp("正在解压 " + node.name + " …"), extra: true });
+    ops.push({ key: "prop", label: "属性", icon: ICONS.prop, fn: () => showProps(node), extra: true });
+    ops.push({ key: "perm", label: "权限", icon: ICONS.perm, fn: () => showPerms(node), extra: true });
+    ops.push({ key: "dl", label: "下载", icon: ICONS.dl, fn: () => mockOp("开始下载 " + node.name), extra: true });
+    ops.push({ key: "zip", label: "压缩", icon: ICONS.zip, fn: () => mockOp("正在压缩 " + node.name), extra: true });
+    ops.push({ key: "del", label: "删除", icon: ICONS.del, fn: () => removeNode(node), danger: true });
+    return ops;
+  }
+
+  // ---- context menu ----
+  const ctxMenu = document.getElementById("ctx-menu");
+  function openCtxMenu(node, x, y) {
+    ctxMenu.innerHTML = "";
+    const ops = buildOps(node);
+    ops.forEach((op) => {
+      if (op.danger) {
+        const sep = document.createElement("div");
+        sep.className = "ctx-sep";
+        ctxMenu.appendChild(sep);
+      }
+      const item = document.createElement("button");
+      item.className = "ctx-item" + (op.danger ? " danger" : "");
+      item.setAttribute("role", "menuitem");
+      item.innerHTML = op.icon + "<span>" + op.label + "</span>";
+      item.addEventListener("click", () => {
+        closeCtxMenu();
+        op.fn();
+      });
+      ctxMenu.appendChild(item);
+    });
+    ctxMenu.hidden = false;
+    const mw = ctxMenu.offsetWidth;
+    const mh = ctxMenu.offsetHeight;
+    ctxMenu.style.left = Math.max(8, Math.min(x, window.innerWidth - mw - 8)) + "px";
+    ctxMenu.style.top = Math.max(8, Math.min(y, window.innerHeight - mh - 8)) + "px";
+  }
+  function closeCtxMenu() {
+    ctxMenu.hidden = true;
+  }
+  document.addEventListener("click", (e) => {
+    if (!ctxMenu.hidden && !ctxMenu.contains(e.target)) closeCtxMenu();
+  });
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape") closeCtxMenu();
+  });
+
+  function nodeFromRow(tr) {
+    const idx = Array.prototype.indexOf.call(body.children, tr);
+    return currentDir()[idx];
+  }
+
+  // desktop right-click
+  body.addEventListener("contextmenu", (e) => {
+    const tr = e.target.closest("tr");
+    if (!tr) return;
+    e.preventDefault();
+    const node = nodeFromRow(tr);
+    if (node) openCtxMenu(node, e.clientX, e.clientY);
+  });
+
+  // mobile long-press
+  let pressTimer = null;
+  body.addEventListener("touchstart", (e) => {
+    const tr = e.target.closest("tr");
+    if (!tr) return;
+    pressTimer = setTimeout(() => {
+      const node = nodeFromRow(tr);
+      if (node) {
+        const r = tr.getBoundingClientRect();
+        openCtxMenu(node, r.left + r.width - 8, r.top + 8);
+      }
+    }, 500);
+  }, { passive: true });
+  ["touchend", "touchmove", "touchcancel"].forEach((ev) =>
+    body.addEventListener(ev, () => clearTimeout(pressTimer), { passive: true })
+  );
 
   function isArchive(name) {
     return /\.(zip|tar|gz|jar|7z)$/i.test(name);

@@ -280,8 +280,47 @@
     .fm-ops { white-space: nowrap; text-align: right; }
     .fm-ops .btn { padding: 6px 9px; font-size: 12px; }
     .fm-ops .btn svg { width: 13px; height: 13px; }
+    .fm-ops .ops-more { display: none; }
     .fm-ops-th { text-align: right !important; }
     .fm-empty { padding: 30px; text-align: center; }
+
+    /* ---------- Context menu ---------- */
+    .ctx-menu {
+      position: fixed;
+      z-index: 60;
+      min-width: 170px;
+      background: rgba(22, 28, 46, 0.97);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      border: 1px solid rgba(255, 255, 255, 0.14);
+      border-radius: 11px;
+      box-shadow: 0 18px 46px rgba(2, 6, 23, 0.6);
+      padding: 6px;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+    .ctx-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 9px 12px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 13.5px;
+      color: var(--color-card-foreground);
+      border: none;
+      background: none;
+      text-align: left;
+      width: 100%;
+      transition: background 0.15s ease, color 0.15s ease;
+    }
+    .ctx-item:hover { background: rgba(34, 197, 94, 0.14); color: #4ADE80; }
+    .ctx-item.danger { color: #F87171; }
+    .ctx-item.danger:hover { background: rgba(239, 68, 68, 0.16); color: #F87171; }
+    .ctx-item svg { width: 15px; height: 15px; flex-shrink: 0; }
+    .ctx-sep { height: 1px; background: rgba(255, 255, 255, 0.08); margin: 4px 6px; }
+    .ctx-menu[hidden] { display: none; }
 
     /* ---------- Modals ---------- */
     .modal-backdrop {
@@ -395,6 +434,8 @@
       .sidebar-label { display: none; }
       .nav-item { white-space: nowrap; }
       .terminal-col { width: 100%; height: 320px; border-right: none; border-bottom: 1px solid var(--color-border); }
+      .fm-ops .ops-extra { display: none; }
+      .fm-ops .ops-more { display: inline-flex; }
     }
     @media (max-width: 700px) {
       .topbar-actions .btn span { display: none; }
@@ -452,6 +493,9 @@
       </div>
     </div>
   </div>
+
+  <!-- Context menu -->
+  <div class="ctx-menu" id="ctx-menu" role="menu" hidden></div>
 
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.css" />
   <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.js"></script>
