@@ -3,7 +3,7 @@ const fs = require("node:fs");
 const path = require("node:path");
 const { getSettings } = require("./settings.js");
 const { ensureAdmin, setupAdmin, login, verifyToken, logout } = require("./auth.js");
-const { listServers, getServer, updateServer } = require("./servers.js");
+const { listServers, getServer, updateServer, addServer } = require("./servers.js");
 const { loadMasterKey } = require("./crypto.js");
 const { getBackend } = require("./files.js");
 const { getConnection, setConnection } = require("./connections.js");
@@ -38,7 +38,7 @@ function mime(p) {
   return { ".html": "text/html", ".css": "text/css", ".js": "text/javascript", ".svg": "image/svg+xml", ".jpg": "image/jpeg", ".png": "image/png", ".json": "application/json", ".ico": "image/x-icon" }[ext] || "application/octet-stream";
 }
 
-function createApp({ dataDir, manager }) {
+function createApp({ dataDir, manager, downloader }) {
   return http.createServer(async (req, res) => {
     try {
       const url = new URL(req.url, "http://x");
@@ -70,6 +70,27 @@ function createApp({ dataDir, manager }) {
         if (p === "/api/servers" && req.method === "GET") {
           if (!verifyToken(dataDir, tokenFrom(req))) return json(res, 401, { error: "未登录" });
           return json(res, 200, listServers(dataDir));
+        }
+        if (p === "/api/servers" && req.method === "POST") {
+          if (!verifyToken(dataDir, tokenFrom(req))) return json(res, 401, { error: "未登录" });
+          const body = await readBody(req);
+          try {
+            return json(res, 200, addServer(dataDir, body));
+          } catch (e) {
+            return json(res, 400, { error: String(e.message || e) });
+          }
+        }
+        const dlm = p.match(/^\/api\/servers\/([^/]+)\/download$/);
+        if (dlm && req.method === "POST") {
+          if (!verifyToken(dataDir, tokenFrom(req))) return json(res, 401, { error: "未登录" });
+          if (!downloader) return json(res, 500, { error: "下载器未就绪" });
+          const body = await readBody(req);
+          try {
+            const dest = await downloader.download(dataDir, dlm[1], body, (n) => {});
+            return json(res, 200, { ok: true, dest });
+          } catch (e) {
+            return json(res, 500, { error: String(e.message || e) });
+          }
         }
         const fm = p.match(/^\/api\/servers\/([^/]+)\/files(?:\/([a-z]+))?$/);
         if (fm) {

@@ -3,12 +3,14 @@ const { getSettings } = require("./src/settings.js");
 const { createApp } = require("./src/app.js");
 const { getRealtime, attachWs } = require("./src/ws.js");
 const { ServerManager } = require("./src/manager.js");
+const { createDownloader } = require("./src/downloader.js");
 
 const dataDir = process.env.MC_PANEL_DATA || path.join(__dirname, "data");
 const settings = getSettings(dataDir);
 const realtime = getRealtime(dataDir);
 const manager = new ServerManager({ dataDir, realtime });
-const server = createApp({ dataDir, manager });
+const downloader = createDownloader({ realtime });
+const server = createApp({ dataDir, manager, downloader });
 
 if (require.main === module) {
   attachWs({ server, dataDir, realtime });
