@@ -14,6 +14,14 @@ test("panel branded TTCManager in titles and readme", () => {
   assert.ok(readme.startsWith("# TTCManager"), "readme heading");
 });
 
+test("license is MIT and branded TTCManager", () => {
+  const license = fs.readFileSync(path.join(root, "LICENSE"), "utf8");
+  const pkg = require("../package.json");
+  assert.ok(license.startsWith("MIT License"), "MIT license");
+  assert.ok(license.includes("TTCManager contributors"));
+  assert.equal(pkg.license, "MIT");
+});
+
 test("api token key uses ttcmanager namespace", () => {
   const api = fs.readFileSync(path.join(root, "js", "api.js"), "utf8");
   assert.ok(api.includes("ttcmanager-token"));
