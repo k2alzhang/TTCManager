@@ -50,18 +50,71 @@
       name: "原版服务器核心",
       src: "https://www.minecraft.net/zh-hans/download/server",
       versions: VANILLA,
+      load: loadVanilla,
     },
     fabric: {
       name: "Fabric",
       src: "https://fabricmc.net/use/server/",
       versions: FABRIC,
+      load: loadFabric,
     },
     paper: {
       name: "Paper (Spigot)",
       src: "https://fill-ui.papermc.io/projects/paper",
       versions: PAPER,
+      load: loadPaper,
     },
   };
+
+  // ---- real version fetching (with static fallback) ----
+  const versionCache = {};
+  function ge(v, b) {
+    const a = v.split(".").map(Number);
+    const c = b.split(".").map(Number);
+    for (let i = 0; i < 3; i++) {
+      if ((a[i] || 0) !== (c[i] || 0)) return (a[i] || 0) > (c[i] || 0);
+    }
+    return true;
+  }
+  function sortDesc(arr) {
+    return arr.slice().sort((x, y) => {
+      const a = x.split(".").map(Number);
+      const b = y.split(".").map(Number);
+      for (let i = 0; i < 3; i++) {
+        const d = (b[i] || 0) - (a[i] || 0);
+        if (d) return d;
+      }
+      return 0;
+    });
+  }
+  async function loadVanilla() {
+    const res = await fetch("https://launchermeta.mojang.com/mc/game/version_manifest_v2.json");
+    if (!res.ok) throw new Error("HTTP " + res.status);
+    const data = await res.json();
+    return sortDesc(data.versions.filter((v) => v.type === "release" && ge(v.id, "1.8")).map((v) => v.id));
+  }
+  async function loadFabric() {
+    const res = await fetch("https://meta.fabricmc.net/v2/versions/game");
+    if (!res.ok) throw new Error("HTTP " + res.status);
+    const data = await res.json();
+    return sortDesc(data.filter((g) => g.stable && ge(g.version, "1.8")).map((g) => g.version));
+  }
+  async function loadPaper() {
+    const res = await fetch("https://fill.papermc.io/v3/projects/paper");
+    if (!res.ok) throw new Error("HTTP " + res.status);
+    const data = await res.json();
+    const flat = Object.values(data.versions || {}).flat().filter((v) => ge(v, "1.8") && !/(rc|pre|snapshot|alpha|beta)/i.test(v));
+    return sortDesc([...new Set(flat)]);
+  }
+  async function getVersions(coreKey) {
+    if (versionCache[coreKey]) return versionCache[coreKey];
+    try {
+      versionCache[coreKey] = await CORES[coreKey].load();
+    } catch (e) {
+      versionCache[coreKey] = CORES[coreKey].versions;
+    }
+    return versionCache[coreKey];
+  }
 
   // ---- tabs ----
   const tabs = document.querySelectorAll(".tab");
@@ -171,10 +224,12 @@
     refreshDownload();
   }
 
-  function renderVersionStep() {
+  async function renderVersionStep() {
     const c = CORES[selectedCore];
     versionNote.textContent = "请选择需要下载的" + c.name + "版本（仅正式版，1.8 起）";
-    renderVersionGrid(c.versions);
+    versionGrid.innerHTML = '<div class="version-loading">正在获取版本列表…</div>';
+    const versions = await getVersions(selectedCore);
+    renderVersionGrid(versions);
   }
 
   function renderVersionGrid(versions) {
