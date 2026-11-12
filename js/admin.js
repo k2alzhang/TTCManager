@@ -37,7 +37,15 @@
       if (show) window.dispatchEvent(new Event("resize"));
     });
   }
-  navItems.forEach((n) => n.addEventListener("click", () => switchView(n.dataset.view)));
+  navItems.forEach((n) => {
+    n.addEventListener("click", () => switchView(n.dataset.view));
+    n.addEventListener("keydown", (e) => {
+      if (e.key === "Enter" || e.key === " ") {
+        e.preventDefault();
+        switchView(n.dataset.view);
+      }
+    });
+  });
 
   // ---- terminal ----
   const terminal = document.getElementById("terminal");

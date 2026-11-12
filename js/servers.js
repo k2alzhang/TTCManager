@@ -34,6 +34,9 @@
       const card = document.createElement("div");
       card.className = "card server-card";
       card.dataset.id = s.id;
+      card.setAttribute("role", "link");
+      card.setAttribute("tabindex", "0");
+      card.setAttribute("aria-label", "进入 " + s.name + " 管理后台");
       const actions = Object.entries(actionButton)
         .map(
           ([key, a]) => `<button class="btn ${a.cls}" data-action="${key}">${ICONS[a.icon]}<span>${a.label}</span></button>`
@@ -54,11 +57,24 @@
         if (e.target.closest("[data-action]")) return;
         window.location.href = "admin.html?server=" + encodeURIComponent(s.id);
       });
+      card.addEventListener("keydown", (e) => {
+        if ((e.key === "Enter" || e.key === " ") && !e.target.closest("[data-action]")) {
+          e.preventDefault();
+          window.location.href = "admin.html?server=" + encodeURIComponent(s.id);
+        }
+      });
       card.querySelectorAll("[data-action]").forEach((btn) => {
         btn.addEventListener("click", (e) => {
           e.stopPropagation();
           const action = btn.dataset.action;
-          if ((action === "start" || action === "restart") && s.status !== "online") {
+          if (action === "restart") {
+            s.status = "starting";
+            render();
+            setTimeout(() => {
+              s.status = "online";
+              render();
+            }, 1500);
+          } else if (action === "start" && s.status !== "online") {
             s.status = "starting";
             render();
             setTimeout(() => {

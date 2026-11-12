@@ -104,8 +104,9 @@
 
       // current pulse dot
       const last = pts[pts.length - 1];
+      const dotX = Math.max(4, Math.min(w - 4, last[0]));
       ctx.beginPath();
-      ctx.arc(last[0], last[1], 3.2, 0, Math.PI * 2);
+      ctx.arc(dotX, last[1], 3.2, 0, Math.PI * 2);
       ctx.fillStyle = color;
       ctx.shadowColor = color;
       ctx.shadowBlur = 10;
@@ -114,6 +115,12 @@
     }
 
     function animate() {
+      if (global.matchMedia && global.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+        reveal = 1;
+        revealed = true;
+        draw();
+        return;
+      }
       if (!revealed) {
         reveal = Math.min(1, reveal + 0.06);
         if (reveal >= 1) revealed = true;
