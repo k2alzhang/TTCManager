@@ -253,9 +253,10 @@
     .fm-breadcrumb .sep { opacity: 0.5; }
     .fm-actions { display: flex; gap: 8px; flex-wrap: wrap; }
 
-    .fm-list-wrap { padding: 6px; }
+    .fm-list-wrap { padding: 6px; overflow-x: auto; }
     .fm-table { width: 100%; border-collapse: collapse; }
     .fm-table th, .fm-table td { text-align: left; padding: 10px 12px; font-size: 13px; }
+    .fm-name > span:last-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 140px; }
     .fm-table thead th {
       color: var(--color-muted-foreground);
       font-weight: 500;
@@ -436,6 +437,11 @@
       .terminal-col { width: 100%; height: 320px; border-right: none; border-bottom: 1px solid var(--color-border); }
       .fm-ops .ops-extra { display: none; }
       .fm-ops .ops-more { display: inline-flex; }
+      .fm-table thead th:nth-child(3),
+      .fm-table thead th:nth-child(4),
+      .fm-table tbody td:nth-child(3),
+      .fm-table tbody td:nth-child(4) { display: none; }
+      .fm-name > span:last-child { max-width: 110px; }
     }
     @media (max-width: 700px) {
       .topbar-actions .btn span { display: none; }
