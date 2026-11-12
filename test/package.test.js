@@ -16,5 +16,7 @@ test("build.js orchestrates pkg", () => {
   const js = fs.readFileSync(path.join(root, "build.js"), "utf8");
   assert.ok(js.includes("pkg"));
   assert.ok(js.includes("dist"));
-  assert.ok(js.includes("lib-es5/bin.js"), "uses local pkg bin (no-bin-links safe)");
+  assert.ok(js.includes("execFileSync"), "invokes local pkg bin via node (no-bin-links safe)");
+  assert.ok(js.includes("lib-es5") && js.includes("bin.js"), "references local pkg bin path");
+  assert.ok(!js.includes("npx pkg"), "does not rely on npx resolving a wrong pkg");
 });
