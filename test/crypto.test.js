@@ -38,5 +38,7 @@ test("loadMasterKey generates once and reuses", () => {
   assert.ok(Buffer.isBuffer(a) && a.length === 32);
   assert.deepEqual(a, b);
   assert.ok(fs.existsSync(path.join(dir, ".secret")));
-  assert.equal(fs.statSync(path.join(dir, ".secret")).mode & 0o777, 0o600);
+  if (process.platform !== "win32") {
+    assert.equal(fs.statSync(path.join(dir, ".secret")).mode & 0o777, 0o600);
+  }
 });

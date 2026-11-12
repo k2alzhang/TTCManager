@@ -37,7 +37,7 @@ async function resolveDownload(meta, fetchFn) {
     };
   }
   if (meta.vendor === "plugin") {
-    return { url: meta.url, filename: meta.filename || path.basename(meta.url) };
+    return { url: meta.url, filename: meta.filename || String(meta.url).split("/").pop().split("?")[0] || "plugin.jar" };
   }
   throw new Error("未知下载源");
 }

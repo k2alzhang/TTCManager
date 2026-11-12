@@ -50,6 +50,11 @@ test("plugin downloads from direct url", async () => {
   assert.equal(r.filename, "a.jar");
 });
 
+test("plugin derives filename from url last segment (cross-platform)", async () => {
+  const r = await resolveDownload({ vendor: "plugin", url: "https://example.com/plugins/LuckPerms.jar?x=1" }, fakeFetch({}));
+  assert.equal(r.filename, "LuckPerms.jar");
+});
+
 test("downloadFile writes bytes with progress", async () => {
   const dest = path.join(makeTmpDir(), "out.jar");
   const body = new TextEncoder().encode("jar-bytes");
