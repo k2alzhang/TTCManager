@@ -22,6 +22,15 @@ test("build.js orchestrates pkg", () => {
   assert.ok(!js.includes("npx pkg"), "does not rely on npx resolving a wrong pkg");
 });
 
+test("build.js renames each platform artifact with a system-name prefix", () => {
+  const { platformFilenames } = require("../build.js");
+  const out = platformFilenames("ttc-manager", ["node18-win-x64", "node18-mac-x64", "node18-linux-x64"]);
+  assert.deepEqual(out.map((f) => f.dest).sort(), ["linux-ttc-manager", "mac-ttc-manager", "win-ttc-manager.exe"]);
+  assert.equal(out.find((f) => f.platform === "linux").dest, "linux-ttc-manager");
+  assert.equal(out.find((f) => f.platform === "win").dest, "win-ttc-manager.exe");
+  assert.ok(!out.find((f) => f.platform === "mac").dest.endsWith(".exe"), "mac has no .exe");
+});
+
 test("workflow auto-publishes binaries to GitHub Release", () => {
   const wf = fs.readFileSync(path.join(root, ".github", "workflows", "build.yml"), "utf8");
   assert.ok(wf.includes("softprops/action-gh-release"), "uses release action");

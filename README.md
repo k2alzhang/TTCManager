@@ -23,7 +23,7 @@ node server.js
 
 ```bash
 npm install
-npm run build     # 生成 dist/ 下的 win-x64 / mac-x64 / linux-x64 可执行文件
+npm run build     # 生成 dist/ 下的 linux-ttc-manager / mac-ttc-manager / win-ttc-manager.exe
 ```
 
 > ⚠️ 需在桌面系统（Windows / macOS / Linux）上执行。pkg 只能为当前宿主平台打包，
