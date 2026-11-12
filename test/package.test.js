@@ -21,3 +21,12 @@ test("build.js orchestrates pkg", () => {
   assert.ok(js.includes("lib-es5") && js.includes("bin.js"), "references local pkg bin path");
   assert.ok(!js.includes("npx pkg"), "does not rely on npx resolving a wrong pkg");
 });
+
+test("workflow auto-publishes binaries to GitHub Release", () => {
+  const wf = fs.readFileSync(path.join(root, ".github", "workflows", "build.yml"), "utf8");
+  assert.ok(wf.includes("softprops/action-gh-release"), "uses release action");
+  assert.ok(wf.includes("release"), "has release job");
+  assert.ok(wf.includes("contents: write"), "release job has write permission");
+  assert.ok(wf.includes("files: dist"), "uploads dist binaries as release assets");
+  assert.ok(wf.includes("download-artifact"), "collects matrix artifacts");
+});

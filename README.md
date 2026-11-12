@@ -29,8 +29,9 @@ npm run build     # 生成 dist/ 下的 win-x64 / mac-x64 / linux-x64 可执行�
 > ⚠️ 需在桌面系统（Windows / macOS / Linux）上执行。pkg 只能为当前宿主平台打包，
 > 无法在 Android / Termux 上交叉生成桌面产物（会报 "only for android"）。
 
-也可用 GitHub Actions 自动构建：`.github/workflows/build.yml`（推送 `v*` 标签或手动触发）
-会在 ubuntu / macos / windows runner 上分别产出三平台单文件，并作为 artifact 上传。
+也可用 GitHub Actions 自动构建并发布：`.github/workflows/build.yml` 在推送 `v*` 标签（或手动触发）时，
+于 ubuntu / macos / windows runner 上分别产出三平台单文件，并**自动上传到 GitHub Release**
+（标签 `v*` 用该标签，手动触发用 `package.json` 的 version 作为标签），也可在 Actions 页下载 artifact。
 
 端用户只需安装 JDK，双击可执行文件即可运行面板，无需 Node。
 
