@@ -25,3 +25,11 @@ test("sampler records tps and done", () => {
   assert.equal(s.snapshot().tps, 20.0);
   assert.equal(s.snapshot().startupSeconds, 2.345);
 });
+
+test("sampler tracks online players from join/leave", () => {
+  const s = new MetricsSampler();
+  s.recordLog("[12:00:01] [Server thread/INFO]: Steve joined the game");
+  s.recordLog("[12:00:02] [Server thread/INFO]: Alex joined the game");
+  s.recordLog("[12:00:03] [Server thread/INFO]: Steve left the game");
+  assert.equal(s.snapshot().players, 1);
+});

@@ -2,15 +2,18 @@ class MetricsSampler {
   constructor() {
     this.tps = null;
     this.startupSeconds = null;
+    this.players = 0;
   }
   recordLog(line) {
     const tps = parseTps(line);
     if (tps !== null) this.tps = tps;
     const done = parseDone(line);
     if (done !== null) this.startupSeconds = done;
+    if (/joined the game/i.test(line)) this.players += 1;
+    if (/left the game/i.test(line)) this.players = Math.max(0, this.players - 1);
   }
   snapshot() {
-    return { tps: this.tps, startupSeconds: this.startupSeconds };
+    return { tps: this.tps, startupSeconds: this.startupSeconds, players: this.players };
   }
 }
 

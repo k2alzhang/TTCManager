@@ -1,5 +1,6 @@
 const { ServerRuntime } = require("./runtime.js");
 const { getServer, updateServer } = require("./servers.js");
+const { MetricsSampler } = require("./metrics.js");
 const log = require("./log.js");
 
 class ServerManager {
@@ -8,6 +9,7 @@ class ServerManager {
     this.realtime = realtime;
     this.runtimeCtor = runtimeCtor || ServerRuntime;
     this._runtimes = new Map();
+    this._samplers = new Map();
   }
 
   _runtime(id) {
@@ -21,7 +23,11 @@ class ServerManager {
       jar: server.path ? `${server.path}/server.jar` : "server.jar",
       cwd: server.path || this.dataDir,
     });
-    rt.on("log", (line) => this.realtime.broadcastTo(id, "log", line));
+    rt.on("log", (line) => {
+      if (!this._samplers.has(id)) this._samplers.set(id, new MetricsSampler());
+      this._samplers.get(id).recordLog(line);
+      this.realtime.broadcastTo(id, "log", line);
+    });
     rt.on("exit", (code) => {
       updateServer(this.dataDir, id, { status: "stopped" });
       this.realtime.broadcastTo(id, "status", { status: "stopped", code });
@@ -72,6 +78,11 @@ class ServerManager {
     const rt = this._runtimes.get(id);
     if (!rt) return "stopped";
     return rt.status();
+  }
+
+  snapshot(id) {
+    const s = this._samplers.get(id);
+    return s ? s.snapshot() : { tps: null, startupSeconds: null, players: 0 };
   }
 }
 

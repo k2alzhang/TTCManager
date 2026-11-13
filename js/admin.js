@@ -82,6 +82,7 @@
         const st = m.data.status;
         setStatus(st === "running" ? "运行中" : st === "starting" ? "启动中" : st === "stopped" ? "已停止" : "未知");
       }
+      else if (m.type === "metrics" && window.__applyMetrics) window.__applyMetrics(m.data);
     };
   }
   connectLive();
@@ -121,13 +122,12 @@
   // ---- monitor cards + charts ----
   const metrics = document.getElementById("metrics");
   const metricDefs = [
-    { key: "memory", label: "内存占用", unit: "MB", min: 0, max: 2048, color: "#4F46E5", base: 860, range: 160 },
-    { key: "cpu", label: "CPU 占用", unit: "%", min: 0, max: 100, color: "#38BDF8", base: 34, range: 22 },
-    { key: "up", label: "网络上传", unit: "KB/s", min: 0, max: 1000, color: "#A78BFA", base: 260, range: 140 },
-    { key: "down", label: "网络下载", unit: "KB/s", min: 0, max: 2000, color: "#F472B6", base: 640, range: 320 },
-    { key: "jdk", label: "JDK 占用", unit: "MB", min: 0, max: 1024, color: "#FBBF24", base: 512, range: 90 },
-    { key: "players", label: "在线玩家", unit: "人", min: 0, max: 20, color: "#34D399", base: 12, range: 4 },
-    { key: "tps", label: "TPS", unit: "", min: 0, max: 20, color: "#FB7185", base: 19.4, range: 0.8 },
+    { key: "mem", label: "内存占用", unit: "MB", min: 0, max: 2048, color: "#4F46E5" },
+    { key: "cpu", label: "CPU 占用", unit: "%", min: 0, max: 100, color: "#38BDF8" },
+    { key: "up", label: "网络上传", unit: "KB/s", min: 0, max: 1000, color: "#A78BFA" },
+    { key: "down", label: "网络下载", unit: "KB/s", min: 0, max: 2000, color: "#F472B6" },
+    { key: "tps", label: "TPS", unit: "", min: 0, max: 20, color: "#FB7185" },
+    { key: "players", label: "在线玩家", unit: "人", min: 0, max: 20, color: "#34D399" },
   ];
 
   const charts = {};
@@ -160,14 +160,7 @@
       max: m.max,
       maxPoints: 80,
     });
-    // seed
-    const seed = [];
-    for (let i = 0; i < 40; i++) {
-      const v = clamp(m.base + (Math.random() - 0.5) * m.range * 2, m.min, m.max);
-      seed.push(v);
-    }
-    chart.seed(seed);
-    charts[m.key] = { chart, valEl, value: m.base };
+    charts[m.key] = { chart, valEl, value: 0 };
   });
 
   function clamp(v, lo, hi) {
@@ -201,18 +194,18 @@
     requestAnimationFrame(step);
   }
 
-  function tick() {
+  function applyMetrics(data) {
     metricDefs.forEach((m) => {
+      const raw = data[m.key];
+      if (raw == null) return;
       const c = charts[m.key];
-      const drift = (Math.random() - 0.5) * m.range * 0.5;
-      const next = clamp(c.value + drift, m.min, m.max);
-      c.value = next;
-      c.chart.push(next);
-      animateVal(m, next);
+      const v = clamp(Number(raw), m.min, m.max);
+      c.value = v;
+      c.chart.push(v);
+      animateVal(m, v);
     });
   }
-  metricDefs.forEach((m) => animateVal(m, m.base));
-  setInterval(tick, 1000);
+  window.__applyMetrics = applyMetrics;
 
   // ---- server properties ----
   const props = document.getElementById("props");

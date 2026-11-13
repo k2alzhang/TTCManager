@@ -45,7 +45,7 @@ function boot() {
     }
 
     const server = createApp({ dataDir, manager, downloader, staticRoot });
-    attachWs({ server, dataDir, realtime });
+    attachWs({ server, dataDir, realtime, manager });
     server.on("error", (err) => {
       if (err.code === "EADDRINUSE") {
         log.error(`port ${port} in use. Change port via PORT env or data/settings.json.`);
