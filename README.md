@@ -70,6 +70,32 @@ xattr -d com.apple.quarantine mac-ttc-manager
 
 浏览器打开 `http://localhost:8080`（局域网内其他设备用 `http://<主机IP>:8080`），首次访问初始化管理员账号。
 
+## 修改端口 / 监听地址
+
+默认监听 `0.0.0.0:8080`。两种方式修改，任选其一：
+
+### 方式一：启动时用环境变量（推荐）
+
+```bash
+# Linux / macOS
+PORT=9000 HOST=0.0.0.0 ./linux-ttc-manager
+# Windows (PowerShell)
+$env:PORT="9000"; $env:HOST="0.0.0.0"; .\win-ttc-manager.exe
+```
+
+环境变量 `PORT` / `HOST` 优先级高于配置文件。
+
+### 方式二：编辑数据目录下的 `settings.json`
+
+数据目录默认 `./data`（源码运行）或可用 `MC_PANEL_DATA` 指定。修改后**重启面板**：
+
+```json
+{ "port": 9000, "host": "0.0.0.0" }
+```
+
+> 若用单文件可执行且未设置 `MC_PANEL_DATA`，建议显式指定一个可写数据目录，例如
+> `MC_PANEL_DATA=/opt/ttcmanager-data ./linux-ttc-manager`。
+
 ## 首次使用
 
 1. 浏览器打开 `http://<主机>:8080`

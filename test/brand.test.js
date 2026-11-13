@@ -31,6 +31,12 @@ test("readme documents per-platform binary usage", () => {
   assert.ok(readme.includes("quarantine"), "macOS gatekeeper note");
 });
 
+test("readme documents how to change the port", () => {
+  const readme = fs.readFileSync(path.join(root, "README.md"), "utf8");
+  assert.ok(readme.includes("PORT"), "env PORT documented");
+  assert.ok(readme.includes("settings.json"), "settings.json fallback documented");
+});
+
 test("api token key uses ttcmanager namespace", () => {
   const api = fs.readFileSync(path.join(root, "js", "api.js"), "utf8");
   assert.ok(api.includes("ttcmanager-token"));
