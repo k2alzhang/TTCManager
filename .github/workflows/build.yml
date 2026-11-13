@@ -81,3 +81,18 @@ jobs:
           files: dist/*
           fail_on_unmatched_files: true
           overwrite: true
+          body: |
+            ## TTCManager — Minecraft 服务器管理面板
+
+            单文件可执行，开箱即用。功能：服务器创建/启动/停止/重启、控制台命令、实时日志(WebSocket)、玩家管理、文件管理、FTP/SFTP、核心(Paper/Fabric/Purpur/原版)与插件在线下载、多服务器独立目录、Token 登录。
+
+            ### 运行
+            1. 下载对应平台的产物（Windows 为 `win-ttc-manager.exe`）。
+            2. 双击运行，终端打印详细启动日志；用浏览器打开 `http://127.0.0.1:8080`。
+            3. 首次访问设置管理员账号密码。数据保存在可执行文件同目录 `data/`（每台服务器独立子目录，防止冲突）。
+            4. 修改端口：`PORT`/`HOST` 环境变量，或 `data/settings.json`。
+
+            ### 产物
+            - `linux-ttc-manager` — Linux x64
+            - `mac-ttc-manager` — macOS x64
+            - `win-ttc-manager.exe` — Windows x64
