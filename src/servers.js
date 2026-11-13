@@ -1,4 +1,5 @@
 const path = require("node:path");
+const fs = require("node:fs");
 const crypto = require("node:crypto");
 const { JsonStore } = require("./store.js");
 
@@ -23,17 +24,25 @@ function addServer(dataDir, input) {
   const name = String(input.name || "").trim();
   if (!name) throw new Error("服务器名称不能为空");
   const servers = listServers(dataDir);
+  const id = crypto.randomUUID();
   const server = {
-    id: crypto.randomUUID(),
+    id,
     name,
     type: String(input.type || "paper"),
     version: String(input.version || "latest"),
-    path: String(input.path || "").trim(),
+    path: "",
     jdk: String(input.jdk || ""),
     memory: Number.isInteger(input.memory) ? input.memory : 1024,
     status: "stopped",
     createdAt: new Date().toISOString(),
   };
+  const explicit = String(input.path || "").trim();
+  if (explicit) {
+    server.path = explicit;
+  } else {
+    server.path = path.join(dataDir, "servers", id);
+    fs.mkdirSync(server.path, { recursive: true });
+  }
   servers.push(server);
   saveServers(dataDir, servers);
   return server;

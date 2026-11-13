@@ -1,7 +1,26 @@
 const test = require("node:test");
 const assert = require("node:assert");
+const fs = require("node:fs");
+const path = require("node:path");
 const { makeTmpDir } = require("./helpers/tmp.js");
 const { listServers, addServer, updateServer, removeServer, getServer } = require("../src/servers.js");
+
+test("auto-creates isolated folder per server", () => {
+  const dir = makeTmpDir();
+  const a = addServer(dir, { name: "A", type: "paper", version: "1.21" });
+  const b = addServer(dir, { name: "B", type: "paper", version: "1.21" });
+  assert.ok(a.path && b.path, "path auto-assigned");
+  assert.notEqual(a.path, b.path, "paths differ");
+  assert.ok(a.path.startsWith(path.join(dir, "servers")), "under dataDir/servers");
+  assert.ok(fs.existsSync(a.path) && fs.statSync(a.path).isDirectory(), "folder created");
+  assert.ok(fs.existsSync(b.path), "second folder created");
+});
+
+test("explicit path is honored", () => {
+  const dir = makeTmpDir();
+  const s = addServer(dir, { name: "A", type: "paper", version: "1.21", path: "/srv/a" });
+  assert.equal(s.path, "/srv/a");
+});
 
 test("add then list", () => {
   const dir = makeTmpDir();
