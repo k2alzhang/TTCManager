@@ -211,14 +211,18 @@ function createApp({ dataDir, manager, downloader, listVersions: listVersionsFn,
         return json(res, 404, { error: "not found" });
       }
 
-      // static
+      // static (served from inside the executable / snapshot in packaged mode)
       let rel = p === "/" ? "index.html" : p.slice(1);
-      if (rel === "login.html") rel = "login.html";
       const file = path.resolve(WEB_ROOT, rel);
       if (!file.startsWith(WEB_ROOT + path.sep) && file !== WEB_ROOT) return json(res, 403, { error: "forbidden" });
-      if (!fs.existsSync(file) || fs.statSync(file).isDirectory()) return json(res, 404, { error: "not found" });
+      let buf;
+      try {
+        buf = fs.readFileSync(file);
+      } catch (e) {
+        return json(res, 404, { error: "not found" });
+      }
       res.writeHead(200, { "Content-Type": mime(file) });
-      return fs.createReadStream(file).pipe(res);
+      return res.end(buf);
     } catch (e) {
       return json(res, 500, { error: String(e.message || e) });
     }

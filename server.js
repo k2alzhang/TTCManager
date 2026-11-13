@@ -4,12 +4,11 @@ const { createApp } = require("./src/app.js");
 const { getRealtime, attachWs } = require("./src/ws.js");
 const { ServerManager } = require("./src/manager.js");
 const { createDownloader } = require("./src/downloader.js");
-const { releaseAssets } = require("./src/release-assets.js");
 const { listServers } = require("./src/servers.js");
 
 const isPkg = !!process.pkg;
 const exeDir = isPkg ? path.dirname(process.execPath) : __dirname;
-const staticRoot = isPkg ? exeDir : __dirname;
+const staticRoot = path.join(__dirname, "..");
 const dataDir = process.env.MC_PANEL_DATA || path.join(isPkg ? exeDir : __dirname, "data");
 
 function boot() {
@@ -27,8 +26,7 @@ function boot() {
   const downloader = createDownloader({ realtime });
   log("runtime ready (server manager + downloader)");
 
-  const released = releaseAssets(path.join(__dirname, ".."), staticRoot, log);
-  log("static root: " + staticRoot + (released ? ` (released ${released} asset(s))` : " (assets present)"));
+  log("static root: " + staticRoot + " (served from inside the executable)");
 
   const servers = listServers(dataDir);
   log("servers registered: " + servers.length);
