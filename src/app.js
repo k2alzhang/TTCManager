@@ -9,6 +9,7 @@ const { getBackend } = require("./files.js");
 const { getConnection, setConnection } = require("./connections.js");
 const { listPlayers, addPlayer, setAdmin, setBanned, setPlayerPassword, removePlayer } = require("./players.js");
 const { listVersions } = require("./download.js");
+const log = require("./log.js");
 
 function json(res, code, obj) {
   const body = JSON.stringify(obj);
@@ -44,6 +45,8 @@ function createApp({ dataDir, manager, downloader, listVersions: listVersionsFn,
     try {
       const url = new URL(req.url, "http://x");
       const p = url.pathname;
+      const t0 = Date.now();
+      res.on("finish", () => log.debug(`${req.method} ${p} -> ${res.statusCode} ${Date.now() - t0}ms`));
 
       if (p.startsWith("/api/")) {
         if (p === "/api/auth/setup" && req.method === "POST") {

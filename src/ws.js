@@ -1,5 +1,6 @@
 const { WebSocketServer } = require("ws");
 const { verifyToken } = require("./auth.js");
+const log = require("./log.js");
 
 function getRealtime(dataDir) {
   return {
@@ -42,6 +43,7 @@ function attachWs({ server, dataDir, realtime }) {
           if (!srv) { srv = { clients: new Set() }; realtimeByServer.set(m.serverId, srv); }
           srv.clients.add(ws);
           ws.send(JSON.stringify({ type: "subscribed", serverId: m.serverId }));
+          log.debug(`ws client subscribed to server ${m.serverId}`);
         }
       } catch (e) {}
     });

@@ -1,5 +1,6 @@
 const { ServerRuntime } = require("./runtime.js");
 const { getServer, updateServer } = require("./servers.js");
+const log = require("./log.js");
 
 class ServerManager {
   constructor({ dataDir, realtime, runtimeCtor }) {
@@ -24,7 +25,9 @@ class ServerManager {
     rt.on("exit", (code) => {
       updateServer(this.dataDir, id, { status: "stopped" });
       this.realtime.broadcastTo(id, "status", { status: "stopped", code });
+      log.info(`server ${id} exited (code ${code})`);
     });
+    log.debug(`runtime created for server ${id} (cwd=${server.path || this.dataDir})`);
     this._runtimes.set(id, rt);
     return rt;
   }
