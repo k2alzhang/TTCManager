@@ -46,6 +46,19 @@ test("vanilla resolves via manifest", async () => {
   assert.equal(r.filename, "server.jar");
 });
 
+test("fabric resolves server jar via meta API", async () => {
+  const fetchFn = fakeFetch({
+    "https://meta.fabricmc.net/v2/versions/loader/1.21.4": {
+      ok: true, json: async () => [
+        { loader: { version: "0.20.1" }, intermediary: { version: "1.21.4" } },
+      ],
+    },
+  });
+  const r = await resolveDownload({ vendor: "fabric", version: "1.21.4" }, fetchFn);
+  assert.equal(r.url, "https://meta.fabricmc.net/v2/versions/loader/1.21.4/0.20.1/1.21.4/server/jar");
+  assert.equal(r.filename, "fabric-server-1.21.4-0.20.1.jar");
+});
+
 test("plugin downloads from direct url", async () => {
   const r = await resolveDownload({ vendor: "plugin", url: "https://example.com/a.jar", filename: "a.jar" }, fakeFetch({}));
   assert.equal(r.url, "https://example.com/a.jar");

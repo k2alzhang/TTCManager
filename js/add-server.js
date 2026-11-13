@@ -267,7 +267,7 @@
     const c = CORES[selectedCore];
     addServer(
       { name: c.name + " " + selectedVersion, version: selectedVersion, type: selectedCore },
-      selectedCore === "fabric" ? null : { vendor: selectedCore, version: selectedVersion, target: "server" }
+      { vendor: selectedCore, version: selectedVersion, target: "server" }
     );
   });
 

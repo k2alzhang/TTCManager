@@ -17,6 +17,20 @@ async function resolveDownload(meta, fetchFn) {
     if (!dl || !dl.url) throw new Error("Paper 未找到可用构建下载");
     return { url: dl.url, filename: dl.name || `paper-${v}.jar` };
   }
+  if (meta.vendor === "fabric") {
+    const gv = meta.version;
+    const res = await f(`https://meta.fabricmc.net/v2/versions/loader/${gv}`);
+    if (!res.ok) throw new Error(`Fabric 获取加载器失败: HTTP ${res.status}`);
+    const list = await res.json();
+    const top = Array.isArray(list) ? list[0] : null;
+    const loader = top && top.loader && top.loader.version;
+    const inter = top && top.intermediary && top.intermediary.version;
+    if (!loader || !inter) throw new Error("Fabric 未找到可用加载器");
+    return {
+      url: `https://meta.fabricmc.net/v2/versions/loader/${gv}/${loader}/${inter}/server/jar`,
+      filename: `fabric-server-${gv}-${loader}.jar`,
+    };
+  }
   if (meta.vendor === "purpur") {
     const v = meta.version;
     return {
