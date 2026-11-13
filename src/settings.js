@@ -1,10 +1,20 @@
 const path = require("node:path");
+const fs = require("node:fs");
 const { JsonStore } = require("./store.js");
 
 const DEFAULTS = { port: 8080, host: "0.0.0.0" };
 
 function settingsFile(dataDir) {
   return path.join(dataDir, "settings.json");
+}
+
+function ensureData(dataDir) {
+  fs.mkdirSync(dataDir, { recursive: true });
+  const settings = settingsFile(dataDir);
+  if (!fs.existsSync(settings)) new JsonStore(settings).save(DEFAULTS);
+  const servers = path.join(dataDir, "servers.json");
+  if (!fs.existsSync(servers)) new JsonStore(servers).save({ servers: [] });
+  return { settings, servers };
 }
 
 function getSettings(dataDir) {
@@ -27,4 +37,4 @@ function setSettings(dataDir, patch) {
   return getSettings(dataDir);
 }
 
-module.exports = { getSettings, setSettings };
+module.exports = { getSettings, setSettings, ensureData };
