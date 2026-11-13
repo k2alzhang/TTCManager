@@ -34,6 +34,7 @@
 
         <!-- Upload pane -->
         <div class="pane anim-in" data-pane="upload" style="--d:.06s">
+          <div class="mode-title"><span class="mode-no">方式一</span> 自定义服务端 · 上传本地 jar</div>
           <div class="card dropzone" id="dropzone" tabindex="0" role="button" aria-label="点击或拖入服务器核心 jar 文件">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M13 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V9z"/><path d="M13 3v6h6"/></svg>
             <p class="dz-title" id="dz-title">点击选择或拖入服务器核心 jar 文件</p>
@@ -55,32 +56,39 @@
 
         <!-- Download pane -->
         <div class="pane anim-in" data-pane="download" hidden style="--d:.06s">
-          <div class="step">
-            <div class="step-head"><span class="step-no">1</span><span>选择服务端核心</span></div>
-            <div class="core-grid" id="core-grid"></div>
-          </div>
+          <div class="mode-title"><span class="mode-no">方式二</span> 在线下载服务端 · 选择核心与版本</div>
+          <div class="dl-cols">
+            <div class="dl-col">
+              <div class="step">
+                <div class="step-head"><span class="step-no">1</span><span>选择服务端核心</span></div>
+                <div class="core-grid" id="core-grid"></div>
+              </div>
 
-          <div class="step" id="version-step" hidden>
-            <div class="step-head"><span class="step-no">2</span><span>选择版本</span></div>
-            <p class="muted step-note" id="version-note"></p>
-            <div class="version-list" id="version-grid" role="listbox" aria-label="版本列表"></div>
-          </div>
-
-          <label class="field">
-            <span class="field-label">服务器名称（自定义）</span>
-            <input class="text-input" id="download-name" type="text" placeholder="例如：我的生存服" maxlength="24" />
-          </label>
-
-          <div class="progress-box" id="download-progress" hidden>
-            <div class="progress-track"><div class="progress-bar" id="download-bar"></div></div>
-            <span class="progress-text" id="download-text">等待下载…</span>
-          </div>
-
-          <div class="add-actions">
-            <button class="btn btn-success" id="download-add" disabled>
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
-              下载并添加
-            </button>
+              <div class="step" id="version-step" hidden>
+                <div class="step-head"><span class="step-no">2</span><span>选择版本</span></div>
+                <p class="muted step-note" id="version-note"></p>
+                <div class="version-list" id="version-grid" role="listbox" aria-label="版本列表"></div>
+              </div>
+            </div>
+            <div class="dl-col">
+              <div class="step">
+                <div class="step-head"><span class="step-no">3</span><span>服务器名称与下载</span></div>
+                <label class="field">
+                  <span class="field-label">服务器名称（自定义）</span>
+                  <input class="text-input" id="download-name" type="text" placeholder="例如：我的生存服" maxlength="24" />
+                </label>
+                <div class="progress-box" id="download-progress" hidden>
+                  <div class="progress-track"><div class="progress-bar" id="download-bar"></div></div>
+                  <span class="progress-text" id="download-text">等待下载…</span>
+                </div>
+                <div class="add-actions">
+                  <button class="btn btn-success" id="download-add" disabled>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
+                    下载并添加
+                  </button>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </main>
@@ -129,6 +137,22 @@
     .tab.active { background: rgba(79, 70, 229, 0.15); color: #4338CA; }
 
     .pane { display: flex; flex-direction: column; gap: 18px; }
+
+    .mode-title {
+      display: flex; align-items: center; gap: 10px;
+      font-weight: 700; font-size: 15.5px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid rgba(15, 23, 42, 0.08);
+    }
+    .mode-no {
+      font-size: 11px; font-weight: 700; letter-spacing: 0.5px;
+      color: #4338CA; background: rgba(79, 70, 229, 0.13);
+      padding: 3px 10px; border-radius: 999px;
+    }
+
+    .dl-cols { display: grid; grid-template-columns: 1.2fr 1fr; gap: 22px; align-items: start; }
+    @media (max-width: 720px) { .dl-cols { grid-template-columns: 1fr; } }
+    .dl-col { display: flex; flex-direction: column; gap: 14px; min-width: 0; }
 
     .dropzone {
       display: flex;

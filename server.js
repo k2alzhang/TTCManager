@@ -5,6 +5,7 @@ const { createApp } = require("./src/app.js");
 const { getRealtime, attachWs } = require("./src/ws.js");
 const { ServerManager } = require("./src/manager.js");
 const { createDownloader } = require("./src/downloader.js");
+const { createInstaller } = require("./src/install.js");
 const { listServers } = require("./src/servers.js");
 const log = require("./src/log.js");
 
@@ -34,7 +35,8 @@ function boot() {
     const realtime = getRealtime(dataDir);
     const manager = new ServerManager({ dataDir, realtime });
     const downloader = createDownloader({ realtime });
-    info("runtime ready (server manager + downloader)");
+    const installer = createInstaller({ realtime });
+    info("runtime ready (server manager + downloader + installer)");
 
     info("static root: " + staticRoot + " (served from inside the executable)");
 
@@ -44,7 +46,7 @@ function boot() {
       info("  - " + s.name + " [" + s.type + " " + s.version + "] path=" + s.path);
     }
 
-    const server = createApp({ dataDir, manager, downloader, staticRoot });
+    const server = createApp({ dataDir, manager, downloader, staticRoot, installer });
     attachWs({ server, dataDir, realtime, manager });
     server.on("error", (err) => {
       if (err.code === "EADDRINUSE") {

@@ -32,7 +32,7 @@ function addServer(dataDir, input) {
     version: String(input.version || "latest"),
     path: "",
     jdk: String(input.jdk || ""),
-    memory: Number.isInteger(input.memory) ? input.memory : 1024,
+    memory: Number.isInteger(input.memory) ? input.memory : 2048,
     status: "stopped",
     createdAt: new Date().toISOString(),
   };

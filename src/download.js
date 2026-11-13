@@ -38,9 +38,14 @@ async function resolveDownload(meta, fetchFn) {
   }
   if (meta.vendor === "purpur") {
     const v = meta.version;
+    const res = await f(`${PURPUR}/${v}/latest`);
+    if (!res.ok) throw new Error(`Purpur 获取元数据失败: HTTP ${res.status}`);
+    const metaJson = await res.json();
+    if (!metaJson.md5) throw new Error("Purpur 未返回 md5 校验值");
     return {
       url: `${PURPUR}/${v}/latest/download`,
       filename: `purpur-${v}.jar`,
+      md5: metaJson.md5,
     };
   }
   if (meta.vendor === "vanilla") {
@@ -87,6 +92,26 @@ async function downloadFile(url, dest, fetchFn, onProgress, expect) {
     if (got.toLowerCase() !== String(expect.value).toLowerCase()) {
       fs.rmSync(tmp, { force: true });
       throw new Error(`下载校验失败 (${expect.alg || "sha256"} 不匹配)`);
+    }
+  } else if (total > 0 && /\.jar$/i.test(dest)) {
+    const fd = fs.openSync(tmp, "r");
+    try {
+      const head = Buffer.alloc(4);
+      fs.readSync(fd, head, 0, 4, 0);
+      const tail = Buffer.alloc(65536);
+      const tailStart = Math.max(0, total - tail.length);
+      const tailRead = fs.readSync(fd, tail, 0, tail.length, tailStart);
+      const isZip = head[0] === 0x50 && head[1] === 0x4b && head[2] === 0x03 && head[3] === 0x04;
+      let hasEocd = false;
+      for (let i = tailRead - 4; i >= 0; i--) {
+        if (tail[i] === 0x50 && tail[i + 1] === 0x4b && tail[i + 2] === 0x05 && tail[i + 3] === 0x06) { hasEocd = true; break; }
+      }
+      if (!isZip || !hasEocd) {
+        fs.rmSync(tmp, { force: true });
+        throw new Error("下载不完整（jar 结构校验失败，缺少 EOCD 或文件头）");
+      }
+    } finally {
+      fs.closeSync(fd);
     }
   }
   fs.renameSync(tmp, dest);

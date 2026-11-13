@@ -26,10 +26,37 @@ test("paper resolves latest build download url (fill API v3)", async () => {
   assert.equal(r.filename, "paper-1.21.4-232.jar");
 });
 
-test("purpur resolves direct url", async () => {
-  const r = await resolveDownload({ vendor: "purpur", version: "1.21" }, fakeFetch({}));
+test("purpur resolves via latest metadata and carries md5", async () => {
+  const fetchFn = fakeFetch({
+    "https://api.purpurmc.org/v2/purpur/1.21/latest": {
+      ok: true, json: async () => ({ build: "1288", md5: "abc123" }),
+    },
+  });
+  const r = await resolveDownload({ vendor: "purpur", version: "1.21" }, fetchFn);
   assert.equal(r.url, "https://api.purpurmc.org/v2/purpur/1.21/latest/download");
-  assert.equal(r.filename, "purpur-1.21.jar");
+  assert.equal(r.md5, "abc123");
+});
+
+test("downloadFile fallback zip check rejects truncated jar (no EOCD)", async () => {
+  const dest = path.join(makeTmpDir(), "trunc.jar");
+  const head = Buffer.from([0x50, 0x4b, 0x03, 0x04]);
+  const body = Buffer.concat([head, Buffer.from("partial-data")]);
+  const fetchFn = async () => ({ ok: true, body: { async *[Symbol.asyncIterator]() { yield body; } } });
+  await assert.rejects(
+    () => downloadFile("https://x/y.jar", dest, fetchFn),
+    /不完整|校验/i
+  );
+  assert.ok(!fs.existsSync(dest));
+});
+
+test("downloadFile fallback zip check passes for minimal valid jar", async () => {
+  const dest = path.join(makeTmpDir(), "ok.jar");
+  const eocd = Buffer.alloc(22);
+  eocd.writeUInt32LE(0x06054b50, 0);
+  const body = Buffer.concat([Buffer.from([0x50, 0x4b, 0x03, 0x04]), Buffer.from("x"), eocd]);
+  const fetchFn = async () => ({ ok: true, body: { async *[Symbol.asyncIterator]() { yield body; } } });
+  await downloadFile("https://x/y.jar", dest, fetchFn);
+  assert.equal(fs.readFileSync(dest, "utf8"), body.toString("binary"));
 });
 
 test("vanilla resolves via manifest", async () => {
@@ -114,7 +141,7 @@ test("listVersions vanilla release >=1.2.5 (server jar era)", async () => {
 });
 
 test("downloadFile writes bytes with progress", async () => {
-  const dest = path.join(makeTmpDir(), "out.jar");
+  const dest = path.join(makeTmpDir(), "out.txt");
   const body = new TextEncoder().encode("jar-bytes");
   const fetchFn = async () => ({
     ok: true,
@@ -126,7 +153,7 @@ test("downloadFile writes bytes with progress", async () => {
     },
   });
   let bytes = 0;
-  await downloadFile("https://x/y.jar", dest, fetchFn, (n) => { bytes = n; });
+  await downloadFile("https://x/y.txt", dest, fetchFn, (n) => { bytes = n; });
   assert.equal(fs.readFileSync(dest, "utf8"), "jar-bytes");
   assert.equal(bytes, 9);
 });

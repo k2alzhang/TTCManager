@@ -36,3 +36,14 @@ test("ensureStartScripts is idempotent", () => {
   const out = ensureStartScripts(dir, { memory: 2048 });
   assert.ok(fs.readFileSync(out.sh, "utf8").includes("-Xmx2048M"));
 });
+
+test("default scripts cap at 2G with no forced Xms (manual editing allowed)", () => {
+  const dir = makeTmpDir();
+  const out = ensureStartScripts(dir);
+  const shCmd = fs.readFileSync(out.sh, "utf8").split("\n").find((l) => l.includes("server.jar"));
+  assert.ok(shCmd.includes("-Xmx2048M"), "default max 2048M");
+  assert.ok(!shCmd.includes("-Xms"), "no forced initial heap (min 0)");
+  const batCmd = fs.readFileSync(out.bat, "utf8").split("\n").find((l) => l.includes("server.jar"));
+  assert.ok(batCmd.includes("-Xmx2048M"));
+  assert.ok(!batCmd.includes("-Xms"));
+});

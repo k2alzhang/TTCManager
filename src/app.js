@@ -40,7 +40,7 @@ function mime(p) {
   return { ".html": "text/html", ".css": "text/css", ".js": "text/javascript", ".svg": "image/svg+xml", ".jpg": "image/jpeg", ".png": "image/png", ".json": "application/json", ".ico": "image/x-icon" }[ext] || "application/octet-stream";
 }
 
-function createApp({ dataDir, manager, downloader, listVersions: listVersionsFn, staticRoot }) {
+function createApp({ dataDir, manager, downloader, listVersions: listVersionsFn, staticRoot, installer }) {
   const WEB_ROOT = staticRoot || path.join(__dirname, "..");
   return http.createServer(async (req, res) => {
     try {
@@ -202,6 +202,17 @@ function createApp({ dataDir, manager, downloader, listVersions: listVersionsFn,
             removeServer(dataDir, sm[1]);
             log.info(`server ${sm[1]} deleted`);
             return json(res, 200, { ok: true });
+          }
+        }
+        if (p === "/api/download/install" && req.method === "POST") {
+          if (!verifyToken(dataDir, tokenFrom(req))) return json(res, 401, { error: "未登录" });
+          if (!installer) return json(res, 500, { error: "安装器未就绪" });
+          const body = await readBody(req);
+          try {
+            const r = await installer(dataDir, body);
+            return json(res, 200, { ok: true, server: r.server, dest: r.dest, scripts: r.scripts });
+          } catch (e) {
+            return json(res, 500, { error: String(e.message || e) });
           }
         }
         if (p === "/api/download/versions" && req.method === "GET") {

@@ -1,61 +1,11 @@
 (function () {
   "use strict";
 
-  const VANILLA = [
-    "1.21.9", "1.21.8", "1.21.7", "1.21.6", "1.21.5", "1.21.4", "1.21.3", "1.21.2", "1.21.1", "1.21", "1.20.6", "1.20.5", "1.20.4", "1.20.3", "1.20.2", "1.20.1", "1.20",
-    "1.19.4", "1.19.3", "1.19.2", "1.19.1", "1.19", "1.18.2", "1.18.1", "1.18", "1.17.1", "1.17", "1.16.5", "1.16.4", "1.16.3", "1.16.2", "1.16.1", "1.16",
-    "1.15.2", "1.15.1", "1.15", "1.14.4", "1.14.3", "1.14.2", "1.14.1", "1.14", "1.13.2", "1.13.1", "1.13", "1.12.2", "1.12.1", "1.12",
-    "1.11.2", "1.11.1", "1.11", "1.10.2", "1.10.1", "1.10", "1.9.4", "1.9.2", "1.9", "1.8.9", "1.8.8", "1.8.7", "1.8.6", "1.8.5", "1.8.4", "1.8.3", "1.8.2", "1.8.1", "1.8",
-  ];
-  const FABRIC = VANILLA.filter((v) => {
-    const a = v.split(".").map(Number);
-    return (a[0] > 1 || (a[0] === 1 && a[1] > 14) || (a[0] === 1 && a[1] === 14 && (a[2] || 0) >= 4));
-  });
-  const PAPER = VANILLA.filter((v) => {
-    const a = v.split(".").map(Number);
-    return a[0] > 1 || (a[0] === 1 && a[1] > 8);
-  });
-
   const CORES = {
-    vanilla: { name: "原版服务器核心", src: "https://www.minecraft.net/zh-hans/download/server", versions: VANILLA },
-    fabric: { name: "Fabric", src: "https://fabricmc.net/use/server/", versions: FABRIC },
-    paper: { name: "Paper (Spigot)", src: "https://fill-ui.papermc.io/projects/paper", versions: PAPER },
+    vanilla: { name: "原版服务器核心", src: "https://www.minecraft.net/zh-hans/download/server" },
+    fabric: { name: "Fabric", src: "https://fabricmc.net/use/server/" },
+    paper: { name: "Paper (Spigot)", src: "https://fill-ui.papermc.io/projects/paper" },
   };
-
-  const versionCache = {};
-  function ge(v, b) {
-    const a = v.split(".").map(Number);
-    const c = b.split(".").map(Number);
-    for (let i = 0; i < 3; i++) {
-      if ((a[i] || 0) !== (c[i] || 0)) return (a[i] || 0) > (c[i] || 0);
-    }
-    return true;
-  }
-  function sortDesc(arr) {
-    return arr.slice().sort((x, y) => {
-      const a = x.split(".").map(Number);
-      const b = y.split(".").map(Number);
-      for (let i = 0; i < 3; i++) {
-        const d = (b[i] || 0) - (a[i] || 0);
-        if (d) return d;
-      }
-      return 0;
-    });
-  }
-  async function getVersions(coreKey) {
-    if (versionCache[coreKey]) return versionCache[coreKey];
-    try {
-      const list = await window.api("/api/download/versions?vendor=" + coreKey);
-      if (Array.isArray(list) && list.length) {
-        versionCache[coreKey] = sortDesc(list.filter((v) => ge(v, "1.8")));
-        return versionCache[coreKey];
-      }
-      throw new Error("empty");
-    } catch (e) {
-      versionCache[coreKey] = CORES[coreKey].versions;
-      return versionCache[coreKey];
-    }
-  }
 
   function fmtBytes(n) {
     if (n < 1024) return n + " B";
@@ -201,10 +151,27 @@
 
   async function renderVersionStep() {
     const c = CORES[selectedCore];
-    versionNote.textContent = "请选择需要下载的" + c.name + "版本（仅正式版，1.8 起）";
+    versionNote.textContent = "请选择需要下载的" + c.name + "版本（仅正式版）";
     versionGrid.innerHTML = '<div class="version-loading">正在获取版本列表…</div>';
-    const versions = await getVersions(selectedCore);
-    renderVersionGrid(versions);
+    try {
+      const res = await window.api("/api/download/versions?vendor=" + selectedCore);
+      const list = await res.json();
+      if (!res.ok || !Array.isArray(list) || !list.length) throw new Error(list && list.error || "版本列表为空");
+      versionCache[selectedCore] = list;
+      renderVersionGrid(list);
+    } catch (e) {
+      versionGrid.innerHTML = "";
+      const err = document.createElement("div");
+      err.className = "version-loading";
+      err.textContent = "获取版本失败: " + (e.message || "未知错误");
+      const retry = document.createElement("button");
+      retry.className = "btn btn-warn";
+      retry.textContent = "重试";
+      retry.addEventListener("click", renderVersionStep);
+      err.appendChild(document.createElement("br"));
+      err.appendChild(retry);
+      versionGrid.appendChild(err);
+    }
   }
 
   function renderVersionGrid(versions) {
@@ -248,51 +215,42 @@
   downloadAdd.addEventListener("click", async () => {
     if (!selectedCore || !selectedVersion || !downloadName.value.trim()) return;
     downloadAdd.disabled = true;
-    setProgress(4, "正在创建服务器目录…");
-    let serverId = null;
+    setProgress(4, "正在解析下载地址…");
     let ws = null;
+    const progressId = "install-" + Date.now() + "-" + Math.random().toString(36).slice(2, 8);
     try {
-      const res = await window.api("/api/servers", {
-        method: "POST",
-        body: JSON.stringify({ name: downloadName.value.trim(), type: selectedCore, version: selectedVersion }),
-      });
-      const data = await res.json();
-      if (!res.ok || data.error) throw new Error(data.error || "创建失败");
-      serverId = data.id;
-
       const proto = location.protocol === "https:" ? "wss" : "ws";
       try {
         ws = new WebSocket(proto + "://" + location.host + "/ws?token=" + encodeURIComponent(window.getToken ? window.getToken() : ""));
-        ws.onopen = () => ws.send(JSON.stringify({ type: "subscribe", serverId }));
+        ws.onopen = () => ws.send(JSON.stringify({ type: "subscribe", serverId: progressId }));
         ws.onmessage = (ev) => {
           try {
             const m = JSON.parse(ev.data);
-            if (m.type === "download-progress" && m.serverId === serverId) {
-              setProgress(8 + Math.min(84, (m.data.bytes / 1048576) * 2), "下载中 " + fmtBytes(m.data.bytes));
-            }
-            if (m.type === "download" && m.serverId === serverId && m.data.status === "done") {
-              setProgress(100, "下载完成，启动脚本已生成 start.sh / start.bat");
+            if (m.type === "download-progress" && m.serverId === progressId) {
+              setProgress(10 + Math.min(80, (m.data.bytes / 1048576) * 2), "下载中 " + fmtBytes(m.data.bytes) + "（校验后才会创建服务器）");
             }
           } catch (e) {}
         };
       } catch (e) {}
 
-      setProgress(6, "开始下载 " + selectedVersion + " …");
-      const d = await window.api("/api/servers/" + encodeURIComponent(serverId) + "/download", {
+      const res = await window.api("/api/download/install", {
         method: "POST",
-        body: JSON.stringify({ vendor: selectedCore, version: selectedVersion, target: "server" }),
+        body: JSON.stringify({
+          name: downloadName.value.trim(),
+          vendor: selectedCore,
+          version: selectedVersion,
+          memory: 2048,
+          progressId: progressId,
+        }),
       });
-      const dj = await d.json();
-      if (!d.ok || dj.error) throw new Error(dj.error || "下载失败");
-      setProgress(100, "下载完成，已创建服务器");
-      window.toast && window.toast("服务器「" + downloadName.value.trim() + "」已创建", "success");
-      setTimeout(() => { window.location.href = "index.html"; }, 800);
+      const data = await res.json();
+      if (!res.ok || data.error) throw new Error(data.error || "下载失败");
+      setProgress(100, "下载校验通过，服务器已创建");
+      window.toast && window.toast("服务器「" + downloadName.value.trim() + "」已创建（核心已校验完整）", "success");
+      setTimeout(() => { window.location.href = "index.html"; }, 900);
     } catch (e) {
-      setProgress(0, "失败：" + (e.message || "未知错误"));
-      window.toast && window.toast("下载/创建失败: " + (e.message || ""), "error");
-      if (serverId) {
-        try { await window.api("/api/servers/" + encodeURIComponent(serverId), { method: "DELETE" }); } catch (e2) {}
-      }
+      setProgress(0, "失败：" + (e.message || "未知错误") + "（未创建服务器）");
+      window.toast && window.toast("下载失败，未创建服务器: " + (e.message || ""), "error");
     } finally {
       if (ws) { try { ws.close(); } catch (e) {} }
       downloadAdd.disabled = false;
