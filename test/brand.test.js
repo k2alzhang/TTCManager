@@ -22,6 +22,15 @@ test("license is MIT and branded TTCManager", () => {
   assert.equal(pkg.license, "MIT");
 });
 
+test("readme documents per-platform binary usage", () => {
+  const readme = fs.readFileSync(path.join(root, "README.md"), "utf8");
+  assert.ok(readme.includes("./linux-ttc-manager"), "linux run command");
+  assert.ok(readme.includes("./mac-ttc-manager"), "mac run command");
+  assert.ok(readme.includes("win-ttc-manager.exe"), "windows binary");
+  assert.ok(readme.includes("chmod +x"), "executable bit");
+  assert.ok(readme.includes("quarantine"), "macOS gatekeeper note");
+});
+
 test("api token key uses ttcmanager namespace", () => {
   const api = fs.readFileSync(path.join(root, "js", "api.js"), "utf8");
   assert.ok(api.includes("ttcmanager-token"));

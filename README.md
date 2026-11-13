@@ -35,6 +35,41 @@ npm run build     # 生成 dist/ 下的 linux-ttc-manager / mac-ttc-manager / wi
 
 端用户只需安装 JDK，双击可执行文件即可运行面板，无需 Node。
 
+## 单文件运行（三平台）
+
+从 GitHub **Releases**（或 Actions Artifacts）下载对应平台文件，**只需安装 JDK 8+**，无需 Node。
+
+### Linux（`linux-ttc-manager`）
+
+```bash
+# 1. 赋予执行权限
+chmod +x linux-ttc-manager
+# 2. 运行（面板数据写入 ./data，端口默认 8080）
+./linux-ttc-manager
+# 或指定数据目录
+MC_PANEL_DATA=/opt/ttcmanager-data ./linux-ttc-manager
+```
+
+### macOS（`mac-ttc-manager`）
+
+```bash
+# 1. 赋予执行权限
+chmod +x mac-ttc-manager
+# 2. （首次）若被 Gatekeeper 拦截，去除隔离标记后运行
+xattr -d com.apple.quarantine mac-ttc-manager
+./mac-ttc-manager
+```
+
+> 也可右键文件 →「打开」以绕过未签名警告。
+
+### Windows（`win-ttc-manager.exe`）
+
+双击运行即可（或在终端执行 `win-ttc-manager.exe`）。若 SmartScreen 拦截，点「更多信息」→「仍要运行」。
+
+### 运行后
+
+浏览器打开 `http://localhost:8080`（局域网内其他设备用 `http://<主机IP>:8080`），首次访问初始化管理员账号。
+
 ## 首次使用
 
 1. 浏览器打开 `http://<主机>:8080`
