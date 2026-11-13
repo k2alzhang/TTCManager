@@ -3,12 +3,13 @@ const fs = require("node:fs");
 const path = require("node:path");
 const { getSettings } = require("./settings.js");
 const { ensureAdmin, setupAdmin, login, verifyToken, logout } = require("./auth.js");
-const { listServers, getServer, updateServer, addServer } = require("./servers.js");
+const { listServers, getServer, updateServer, addServer, removeServer } = require("./servers.js");
 const { loadMasterKey } = require("./crypto.js");
 const { getBackend } = require("./files.js");
 const { getConnection, setConnection } = require("./connections.js");
 const { listPlayers, addPlayer, setAdmin, setBanned, setPlayerPassword, removePlayer } = require("./players.js");
 const { listVersions } = require("./download.js");
+const { ensureStartScripts } = require("./scripts.js");
 const log = require("./log.js");
 
 function json(res, code, obj) {
@@ -96,6 +97,23 @@ function createApp({ dataDir, manager, downloader, listVersions: listVersionsFn,
             return json(res, 500, { error: String(e.message || e) });
           }
         }
+        const upM = p.match(/^\/api\/servers\/([^/]+)\/upload$/);
+        if (upM && req.method === "POST") {
+          if (!verifyToken(dataDir, tokenFrom(req))) return json(res, 401, { error: "未登录" });
+          const server = getServer(dataDir, upM[1]);
+          if (!server || !server.path) return json(res, 400, { error: "服务器路径未设置" });
+          fs.mkdirSync(server.path, { recursive: true });
+          const dest = path.join(server.path, "server.jar");
+          const ws = fs.createWriteStream(dest);
+          req.pipe(ws);
+          await new Promise((resolve, reject) => {
+            ws.on("finish", resolve);
+            ws.on("error", reject);
+          });
+          const scripts = ensureStartScripts(server.path, { memory: server.memory, javaPath: server.jdk });
+          log.info(`uploaded server.jar for server ${server.id}`);
+          return json(res, 200, { ok: true, dest, scripts });
+        }
         const fm = p.match(/^\/api\/servers\/([^/]+)\/files(?:\/([a-z]+))?$/);
         if (fm) {
           if (!verifyToken(dataDir, tokenFrom(req))) return json(res, 401, { error: "未登录" });
@@ -109,6 +127,19 @@ function createApp({ dataDir, manager, downloader, listVersions: listVersionsFn,
               return json(res, 200, await backend.list(path0));
             }
             return json(res, 400, { error: "缺少操作" });
+          }
+          if (action === "download" && req.method === "GET") {
+            if (!backend.pathFor) return json(res, 400, { error: "该存储后端不支持直接下载" });
+            const full = String(url.searchParams.get("path") || "");
+            const ddir = full.includes("/") ? full.slice(0, full.lastIndexOf("/")) : "";
+            const dname = full.includes("/") ? full.slice(full.lastIndexOf("/") + 1) : full;
+            const f = backend.pathFor(ddir, dname);
+            if (!fs.existsSync(f) || fs.statSync(f).isDirectory()) return json(res, 404, { error: "文件不存在" });
+            res.writeHead(200, {
+              "Content-Type": "application/octet-stream",
+              "Content-Disposition": `attachment; filename*=UTF-8''${encodeURIComponent(dname)}`,
+            });
+            return fs.createReadStream(f).pipe(res);
           }
           if (req.method !== "POST") return json(res, 405, { error: "method" });
           const body = await readBody(req);
@@ -166,6 +197,11 @@ function createApp({ dataDir, manager, downloader, listVersions: listVersionsFn,
           if (req.method === "PUT") {
             const body = await readBody(req);
             return json(res, 200, updateServer(dataDir, sm[1], body));
+          }
+          if (req.method === "DELETE") {
+            removeServer(dataDir, sm[1]);
+            log.info(`server ${sm[1]} deleted`);
+            return json(res, 200, { ok: true });
           }
         }
         if (p === "/api/download/versions" && req.method === "GET") {

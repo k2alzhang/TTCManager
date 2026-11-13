@@ -38,6 +38,9 @@ function localBackend(root) {
       const full = resolveSafe(root, path.join(dir || "", name));
       fs.rmSync(full, { recursive: true, force: true });
     },
+    pathFor(dir, name) {
+      return resolveSafe(root, path.join(dir || "", name));
+    },
   };
 }
 

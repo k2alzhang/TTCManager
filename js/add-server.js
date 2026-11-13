@@ -1,72 +1,27 @@
 (function () {
-  // 全量正式版（release），从 1.8 起，最新在前
+  "use strict";
+
   const VANILLA = [
-    "1.21.9", "1.21.8", "1.21.7", "1.21.6", "1.21.5", "1.21.4", "1.21.3", "1.21.2", "1.21.1", "1.21",
-    "1.20.6", "1.20.5", "1.20.4", "1.20.3", "1.20.2", "1.20.1", "1.20",
-    "1.19.4", "1.19.3", "1.19.2", "1.19.1", "1.19",
-    "1.18.2", "1.18.1", "1.18",
-    "1.17.1", "1.17",
-    "1.16.5", "1.16.4", "1.16.3", "1.16.2", "1.16.1", "1.16",
-    "1.15.2", "1.15.1", "1.15",
-    "1.14.4", "1.14.3", "1.14.2", "1.14.1", "1.14",
-    "1.13.2", "1.13.1", "1.13",
-    "1.12.2", "1.12.1", "1.12",
-    "1.11.2", "1.11.1", "1.11",
-    "1.10.2", "1.10.1", "1.10",
-    "1.9.4", "1.9.3", "1.9.2", "1.9.1", "1.9",
-    "1.8.9", "1.8.8", "1.8.7", "1.8.6", "1.8.5", "1.8.4", "1.8.3", "1.8.2", "1.8.1", "1.8",
+    "1.21.9", "1.21.8", "1.21.7", "1.21.6", "1.21.5", "1.21.4", "1.21.3", "1.21.2", "1.21.1", "1.21", "1.20.6", "1.20.5", "1.20.4", "1.20.3", "1.20.2", "1.20.1", "1.20",
+    "1.19.4", "1.19.3", "1.19.2", "1.19.1", "1.19", "1.18.2", "1.18.1", "1.18", "1.17.1", "1.17", "1.16.5", "1.16.4", "1.16.3", "1.16.2", "1.16.1", "1.16",
+    "1.15.2", "1.15.1", "1.15", "1.14.4", "1.14.3", "1.14.2", "1.14.1", "1.14", "1.13.2", "1.13.1", "1.13", "1.12.2", "1.12.1", "1.12",
+    "1.11.2", "1.11.1", "1.11", "1.10.2", "1.10.1", "1.10", "1.9.4", "1.9.2", "1.9", "1.8.9", "1.8.8", "1.8.7", "1.8.6", "1.8.5", "1.8.4", "1.8.3", "1.8.2", "1.8.1", "1.8",
   ];
-
-  function vAtLeast(v, base) {
-    const [a, b] = [v, base].map((s) => s.split(".").map(Number));
-    for (let i = 0; i < 3; i++) {
-      if ((a[i] || 0) !== (b[i] || 0)) return (a[i] || 0) > (b[i] || 0);
-    }
-    return true;
-  }
-
-  // Fabric loader 支持 1.14.4 起的正式版
-  const FABRIC = VANILLA.filter((v) => vAtLeast(v, "1.14.4"));
-  // Paper 仅支持特定分支版本（每个分支 Paper 构建的版本）
-  const PAPER = [
-    "1.21.9", "1.21.8", "1.21.5", "1.21.4", "1.21.1",
-    "1.20.6", "1.20.4",
-    "1.19.4",
-    "1.18.2",
-    "1.17.1",
-    "1.16.5",
-    "1.15.2",
-    "1.14.4",
-    "1.13.2",
-    "1.12.2",
-    "1.11.2",
-    "1.10.2",
-    "1.9.4",
-    "1.8.8",
-  ];
+  const FABRIC = VANILLA.filter((v) => {
+    const a = v.split(".").map(Number);
+    return (a[0] > 1 || (a[0] === 1 && a[1] > 14) || (a[0] === 1 && a[1] === 14 && (a[2] || 0) >= 4));
+  });
+  const PAPER = VANILLA.filter((v) => {
+    const a = v.split(".").map(Number);
+    return a[0] > 1 || (a[0] === 1 && a[1] > 8);
+  });
 
   const CORES = {
-    vanilla: {
-      name: "原版服务器核心",
-      src: "https://www.minecraft.net/zh-hans/download/server",
-      versions: VANILLA,
-      load: loadVanilla,
-    },
-    fabric: {
-      name: "Fabric",
-      src: "https://fabricmc.net/use/server/",
-      versions: FABRIC,
-      load: loadFabric,
-    },
-    paper: {
-      name: "Paper (Spigot)",
-      src: "https://fill-ui.papermc.io/projects/paper",
-      versions: PAPER,
-      load: loadPaper,
-    },
+    vanilla: { name: "原版服务器核心", src: "https://www.minecraft.net/zh-hans/download/server", versions: VANILLA },
+    fabric: { name: "Fabric", src: "https://fabricmc.net/use/server/", versions: FABRIC },
+    paper: { name: "Paper (Spigot)", src: "https://fill-ui.papermc.io/projects/paper", versions: PAPER },
   };
 
-  // ---- real version fetching (with static fallback) ----
   const versionCache = {};
   function ge(v, b) {
     const a = v.split(".").map(Number);
@@ -87,25 +42,6 @@
       return 0;
     });
   }
-  async function loadVanilla() {
-    const res = await fetch("https://launchermeta.mojang.com/mc/game/version_manifest_v2.json");
-    if (!res.ok) throw new Error("HTTP " + res.status);
-    const data = await res.json();
-    return sortDesc(data.versions.filter((v) => v.type === "release" && ge(v.id, "1.8")).map((v) => v.id));
-  }
-  async function loadFabric() {
-    const res = await fetch("https://meta.fabricmc.net/v2/versions/game");
-    if (!res.ok) throw new Error("HTTP " + res.status);
-    const data = await res.json();
-    return sortDesc(data.filter((g) => g.stable && ge(g.version, "1.8")).map((g) => g.version));
-  }
-  async function loadPaper() {
-    const res = await fetch("https://fill.papermc.io/v3/projects/paper");
-    if (!res.ok) throw new Error("HTTP " + res.status);
-    const data = await res.json();
-    const flat = Object.values(data.versions || {}).flat().filter((v) => ge(v, "1.8") && !/(rc|pre|snapshot|alpha|beta)/i.test(v));
-    return sortDesc([...new Set(flat)]);
-  }
   async function getVersions(coreKey) {
     if (versionCache[coreKey]) return versionCache[coreKey];
     try {
@@ -119,6 +55,12 @@
       versionCache[coreKey] = CORES[coreKey].versions;
       return versionCache[coreKey];
     }
+  }
+
+  function fmtBytes(n) {
+    if (n < 1024) return n + " B";
+    if (n < 1048576) return (n / 1024).toFixed(1) + " KB";
+    return (n / 1048576).toFixed(1) + " MB";
   }
 
   // ---- tabs ----
@@ -137,7 +79,7 @@
     });
   });
 
-  // ---- upload ----
+  // ---- custom upload (only upload + name; start scripts auto-generated) ----
   const dropzone = document.getElementById("dropzone");
   const jarInput = document.getElementById("jar-input");
   const dzTitle = document.getElementById("dz-title");
@@ -181,21 +123,50 @@
     if (f) setFile(f);
   });
   uploadName.addEventListener("input", refreshUpload);
-  uploadAdd.addEventListener("click", () => {
+
+  uploadAdd.addEventListener("click", async () => {
     if (!selectedFile || !uploadName.value.trim()) return;
-    addServer({
-      name: uploadName.value.trim(),
-      version: selectedFile.name.replace(/\.jar$/i, ""),
-      type: "vanilla",
-    });
+    uploadAdd.disabled = true;
+    try {
+      const res = await window.api("/api/servers", {
+        method: "POST",
+        body: JSON.stringify({ name: uploadName.value.trim(), type: "custom", version: selectedFile.name.replace(/\.jar$/i, "") }),
+      });
+      const data = await res.json();
+      if (!res.ok || data.error) {
+        window.toast && window.toast(data.error || "创建失败", "error");
+        return;
+      }
+      window.toast && window.toast("上传中：" + selectedFile.name, "info");
+      const up = await window.api("/api/servers/" + encodeURIComponent(data.id) + "/upload", {
+        method: "POST",
+        headers: { "Content-Type": "application/octet-stream" },
+        body: selectedFile,
+      });
+      const upj = await up.json();
+      if (upj.error) {
+        window.toast && window.toast("上传失败: " + upj.error, "error");
+        return;
+      }
+      window.toast && window.toast("已创建并上传，启动脚本已生成 start.sh / start.bat", "success");
+      setTimeout(() => { window.location.href = "index.html"; }, 600);
+    } catch (e) {
+      window.toast && window.toast(e.message || "创建失败", "error");
+    } finally {
+      uploadAdd.disabled = false;
+    }
   });
 
-  // ---- download ----
+  // ---- online download (version + name + progress; create only after done) ----
   const coreGrid = document.getElementById("core-grid");
   const versionStep = document.getElementById("version-step");
   const versionNote = document.getElementById("version-note");
   const versionGrid = document.getElementById("version-grid");
+  const downloadName = document.getElementById("download-name");
   const downloadAdd = document.getElementById("download-add");
+  const progressBox = document.getElementById("download-progress");
+  const downloadBar = document.getElementById("download-bar");
+  const downloadText = document.getElementById("download-text");
   let selectedCore = null;
   let selectedVersion = null;
 
@@ -264,42 +235,69 @@
   }
 
   function refreshDownload() {
-    downloadAdd.disabled = !(selectedCore && selectedVersion);
+    downloadAdd.disabled = !(selectedCore && selectedVersion && downloadName.value.trim());
+  }
+  downloadName.addEventListener("input", refreshDownload);
+
+  function setProgress(pct, text) {
+    progressBox.hidden = false;
+    downloadBar.style.width = Math.max(0, Math.min(100, pct)) + "%";
+    downloadText.textContent = text;
   }
 
-  downloadAdd.addEventListener("click", () => {
-    if (!selectedCore || !selectedVersion) return;
-    const c = CORES[selectedCore];
-    addServer(
-      { name: c.name + " " + selectedVersion, version: selectedVersion, type: selectedCore },
-      { vendor: selectedCore, version: selectedVersion, target: "server" }
-    );
-  });
-
-  async function addServer(server, downloadMeta) {
+  downloadAdd.addEventListener("click", async () => {
+    if (!selectedCore || !selectedVersion || !downloadName.value.trim()) return;
+    downloadAdd.disabled = true;
+    setProgress(4, "正在创建服务器目录…");
+    let serverId = null;
+    let ws = null;
     try {
       const res = await window.api("/api/servers", {
         method: "POST",
-        body: JSON.stringify({ name: server.name, type: server.type, version: server.version }),
+        body: JSON.stringify({ name: downloadName.value.trim(), type: selectedCore, version: selectedVersion }),
       });
       const data = await res.json();
-      if (!res.ok || data.error) {
-        window.toast && window.toast(data.error || "创建失败", "error");
-        return;
-      }
-      if (downloadMeta) {
-        const d = await window.api("/api/servers/" + data.id + "/download", {
-          method: "POST",
-          body: JSON.stringify(downloadMeta),
-        });
-        const dj = await d.json();
-        if (dj.error) window.toast && window.toast("已创建，但核心下载失败: " + dj.error, "warn");
-      }
-      window.location.href = "index.html";
+      if (!res.ok || data.error) throw new Error(data.error || "创建失败");
+      serverId = data.id;
+
+      const proto = location.protocol === "https:" ? "wss" : "ws";
+      try {
+        ws = new WebSocket(proto + "://" + location.host + "/ws?token=" + encodeURIComponent(window.getToken ? window.getToken() : ""));
+        ws.onopen = () => ws.send(JSON.stringify({ type: "subscribe", serverId }));
+        ws.onmessage = (ev) => {
+          try {
+            const m = JSON.parse(ev.data);
+            if (m.type === "download-progress" && m.serverId === serverId) {
+              setProgress(8 + Math.min(84, (m.data.bytes / 1048576) * 2), "下载中 " + fmtBytes(m.data.bytes));
+            }
+            if (m.type === "download" && m.serverId === serverId && m.data.status === "done") {
+              setProgress(100, "下载完成，启动脚本已生成 start.sh / start.bat");
+            }
+          } catch (e) {}
+        };
+      } catch (e) {}
+
+      setProgress(6, "开始下载 " + selectedVersion + " …");
+      const d = await window.api("/api/servers/" + encodeURIComponent(serverId) + "/download", {
+        method: "POST",
+        body: JSON.stringify({ vendor: selectedCore, version: selectedVersion, target: "server" }),
+      });
+      const dj = await d.json();
+      if (!d.ok || dj.error) throw new Error(dj.error || "下载失败");
+      setProgress(100, "下载完成，已创建服务器");
+      window.toast && window.toast("服务器「" + downloadName.value.trim() + "」已创建", "success");
+      setTimeout(() => { window.location.href = "index.html"; }, 800);
     } catch (e) {
-      window.toast && window.toast(e.message || "创建失败", "error");
+      setProgress(0, "失败：" + (e.message || "未知错误"));
+      window.toast && window.toast("下载/创建失败: " + (e.message || ""), "error");
+      if (serverId) {
+        try { await window.api("/api/servers/" + encodeURIComponent(serverId), { method: "DELETE" }); } catch (e2) {}
+      }
+    } finally {
+      if (ws) { try { ws.close(); } catch (e) {} }
+      downloadAdd.disabled = false;
     }
-  }
+  });
 
   renderCoreCards();
 })();

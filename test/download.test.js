@@ -130,3 +130,35 @@ test("downloadFile writes bytes with progress", async () => {
   assert.equal(fs.readFileSync(dest, "utf8"), "jar-bytes");
   assert.equal(bytes, 9);
 });
+
+test("downloadFile verifies sha256 and rejects on mismatch, removing file", async () => {
+  const dest = path.join(makeTmpDir(), "bad.jar");
+  const body = new TextEncoder().encode("jar-bytes");
+  const fetchFn = async () => ({ ok: true, body: { async *[Symbol.asyncIterator]() { yield body; } } });
+  await assert.rejects(
+    () => downloadFile("https://x/y.jar", dest, fetchFn, null, { alg: "sha256", value: "deadbeef" }),
+    /校验/i
+  );
+  assert.ok(!fs.existsSync(dest), "corrupt file removed");
+});
+
+test("downloadFile passes on matching hash", async () => {
+  const dest = path.join(makeTmpDir(), "good.jar");
+  const body = new TextEncoder().encode("jar-bytes");
+  const sha = require("node:crypto").createHash("sha256").update(body).digest("hex");
+  const fetchFn = async () => ({ ok: true, body: { async *[Symbol.asyncIterator]() { yield body; } } });
+  await downloadFile("https://x/y.jar", dest, fetchFn, null, { alg: "sha256", value: sha });
+  assert.equal(fs.readFileSync(dest, "utf8"), "jar-bytes");
+});
+
+test("paper resolve carries sha256 checksum", async () => {
+  const fetchFn = fakeFetch({
+    "https://fill.papermc.io/v3/projects/paper/versions/1.21.4/builds": {
+      ok: true, json: async () => [
+        { id: 232, downloads: { "server:default": { name: "p.jar", url: "https://fill-data/u/p.jar", checksums: { sha256: "abc123" } } } },
+      ],
+    },
+  });
+  const r = await resolveDownload({ vendor: "paper", version: "1.21.4" }, fetchFn);
+  assert.equal(r.sha256, "abc123");
+});

@@ -154,7 +154,7 @@
     if (!isDir && isArchive(node.name)) ops.push({ key: "unzip", label: "解压", icon: ICONS.unzip, fn: () => mockOp("正在解压 " + node.name + " …"), extra: true });
     ops.push({ key: "prop", label: "属性", icon: ICONS.prop, fn: () => showProps(node), extra: true });
     ops.push({ key: "perm", label: "权限", icon: ICONS.perm, fn: () => showPerms(node), extra: true });
-    ops.push({ key: "dl", label: "下载", icon: ICONS.dl, fn: () => mockOp("开始下载 " + node.name), extra: true });
+    ops.push({ key: "dl", label: "下载", icon: ICONS.dl, fn: () => downloadNode(node), extra: true });
     ops.push({ key: "zip", label: "压缩", icon: ICONS.zip, fn: () => mockOp("正在压缩 " + node.name), extra: true });
     ops.push({ key: "del", label: "删除", icon: ICONS.del, fn: () => removeNode(node), danger: true });
     return ops;
@@ -266,6 +266,19 @@
       .then((r) => r.json())
       .then((d) => { if (d.error) { mockOp(d.error); return; } loadDir(); })
       .catch((e) => mockOp(e.message || "删除失败"));
+  }
+
+  function downloadNode(node) {
+    if (node.type === "dir") { mockOp("文件夹不能直接下载"); return; }
+    const rel = path.concat(node.name).join("/");
+    const url = "/api/servers/" + encodeURIComponent(sid) + "/files/download?path=" + encodeURIComponent(rel);
+    const a = document.createElement("a");
+    a.href = url + "&token=" + encodeURIComponent(window.getToken ? window.getToken() : "");
+    a.download = node.name;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    mockOp("开始下载 " + node.name);
   }
 
   function renameNode(node) {

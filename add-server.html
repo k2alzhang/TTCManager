@@ -44,6 +44,7 @@
             <span class="field-label">服务器名称</span>
             <input class="text-input" id="upload-name" type="text" placeholder="例如：我的生存服" maxlength="24" />
           </label>
+          <p class="muted">上传完成后将自动生成启动脚本 start.sh / start.bat，可在「文件管理」中修改。</p>
           <div class="add-actions">
             <button class="btn btn-success" id="upload-add" disabled>
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
@@ -63,6 +64,16 @@
             <div class="step-head"><span class="step-no">2</span><span>选择版本</span></div>
             <p class="muted step-note" id="version-note"></p>
             <div class="version-list" id="version-grid" role="listbox" aria-label="版本列表"></div>
+          </div>
+
+          <label class="field">
+            <span class="field-label">服务器名称（自定义）</span>
+            <input class="text-input" id="download-name" type="text" placeholder="例如：我的生存服" maxlength="24" />
+          </label>
+
+          <div class="progress-box" id="download-progress" hidden>
+            <div class="progress-track"><div class="progress-bar" id="download-bar"></div></div>
+            <span class="progress-text" id="download-text">等待下载…</span>
           </div>
 
           <div class="add-actions">
@@ -199,6 +210,19 @@
       border-radius: 999px;
     }
     .version-loading { padding: 18px; text-align: center; color: var(--color-muted-foreground); font-family: var(--font-body); font-size: 13px; }
+
+    .progress-box { display: flex; flex-direction: column; gap: 7px; }
+    .progress-track {
+      height: 8px; border-radius: 999px; overflow: hidden;
+      background: rgba(15, 23, 42, 0.08);
+    }
+    .progress-bar {
+      height: 100%; width: 0%;
+      background: linear-gradient(90deg, var(--color-accent), #34D399);
+      border-radius: 999px;
+      transition: width 0.25s ease;
+    }
+    .progress-text { font-size: 12.5px; color: var(--color-muted-foreground); font-family: var(--font-mono); }
   </style>
 
   <script src="js/effects.js"></script>

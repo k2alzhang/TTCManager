@@ -1,5 +1,6 @@
 const fs = require("node:fs");
 const path = require("node:path");
+const crypto = require("node:crypto");
 
 const PAPER = "https://fill.papermc.io/v3/projects/paper/versions";
 const PURPUR = "https://api.purpurmc.org/v2/purpur";
@@ -15,7 +16,11 @@ async function resolveDownload(meta, fetchFn) {
     const build = Array.isArray(builds) ? builds[builds.length - 1] : null;
     const dl = build && build.downloads && build.downloads["server:default"];
     if (!dl || !dl.url) throw new Error("Paper 未找到可用构建下载");
-    return { url: dl.url, filename: dl.name || `paper-${v}.jar` };
+    return {
+      url: dl.url,
+      filename: dl.name || `paper-${v}.jar`,
+      sha256: dl.checksums && dl.checksums.sha256,
+    };
   }
   if (meta.vendor === "fabric") {
     const gv = meta.version;
@@ -49,6 +54,7 @@ async function resolveDownload(meta, fetchFn) {
     return {
       url: vres.downloads.server.url,
       filename: "server.jar",
+      sha1: vres.downloads.server.sha1,
     };
   }
   if (meta.vendor === "plugin") {
@@ -57,16 +63,18 @@ async function resolveDownload(meta, fetchFn) {
   throw new Error("未知下载源");
 }
 
-async function downloadFile(url, dest, fetchFn, onProgress) {
+async function downloadFile(url, dest, fetchFn, onProgress, expect) {
   const f = fetchFn || fetch;
   const res = await f(url);
   if (!res.ok) throw new Error("下载失败: HTTP " + res.status);
   fs.mkdirSync(path.dirname(dest), { recursive: true });
   const tmp = dest + ".part";
+  const hash = expect && expect.value ? crypto.createHash(expect.alg || "sha256") : null;
   let total = 0;
   const out = fs.createWriteStream(tmp);
   for await (const chunk of res.body) {
     out.write(chunk);
+    if (hash) hash.update(chunk);
     total += chunk.length;
     if (onProgress) onProgress(total);
   }
@@ -74,6 +82,13 @@ async function downloadFile(url, dest, fetchFn, onProgress) {
     out.end(() => resolve());
     out.on("error", reject);
   });
+  if (hash) {
+    const got = hash.digest("hex");
+    if (got.toLowerCase() !== String(expect.value).toLowerCase()) {
+      fs.rmSync(tmp, { force: true });
+      throw new Error(`下载校验失败 (${expect.alg || "sha256"} 不匹配)`);
+    }
+  }
   fs.renameSync(tmp, dest);
   return total;
 }
