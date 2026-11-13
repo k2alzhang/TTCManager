@@ -1,7 +1,7 @@
 const fs = require("node:fs");
 const path = require("node:path");
 
-const PAPER = "https://api.papermc.io/v2/projects/paper/versions";
+const PAPER = "https://fill.papermc.io/v3/projects/paper/versions";
 const PURPUR = "https://api.purpurmc.org/v2/purpur";
 const MANIFEST = "https://piston-meta.mojang.com/mc/game/version_manifest_v2.json";
 
@@ -10,12 +10,12 @@ async function resolveDownload(meta, fetchFn) {
   if (meta.vendor === "paper") {
     const v = meta.version;
     const res = await f(`${PAPER}/${v}/builds`);
-    const data = await res.json();
-    const build = data.builds[data.builds.length - 1].build;
-    return {
-      url: `${PAPER}/${v}/builds/${build}/downloads/paper-${v}-${build}.jar`,
-      filename: `paper-${v}-${build}.jar`,
-    };
+    if (!res.ok) throw new Error(`Paper 获取构建失败: HTTP ${res.status}`);
+    const builds = await res.json();
+    const build = Array.isArray(builds) ? builds[builds.length - 1] : null;
+    const dl = build && build.downloads && build.downloads["server:default"];
+    if (!dl || !dl.url) throw new Error("Paper 未找到可用构建下载");
+    return { url: dl.url, filename: dl.name || `paper-${v}.jar` };
   }
   if (meta.vendor === "purpur") {
     const v = meta.version;

@@ -13,15 +13,17 @@ function fakeFetch(map) {
   };
 }
 
-test("paper resolves latest build download url", async () => {
+test("paper resolves latest build download url (fill API v3)", async () => {
   const fetchFn = fakeFetch({
-    "https://api.papermc.io/v2/projects/paper/versions/1.21/builds": {
-      ok: true, json: async () => ({ builds: [{ build: 123 }] }),
+    "https://fill.papermc.io/v3/projects/paper/versions/1.21.4/builds": {
+      ok: true, json: async () => [
+        { id: 232, downloads: { "server:default": { name: "paper-1.21.4-232.jar", url: "https://fill-data.papermc.io/v1/objects/abc/paper-1.21.4-232.jar" } } },
+      ],
     },
   });
-  const r = await resolveDownload({ vendor: "paper", version: "1.21" }, fetchFn);
-  assert.equal(r.url, "https://api.papermc.io/v2/projects/paper/versions/1.21/builds/123/downloads/paper-1.21-123.jar");
-  assert.equal(r.filename, "paper-1.21-123.jar");
+  const r = await resolveDownload({ vendor: "paper", version: "1.21.4" }, fetchFn);
+  assert.equal(r.url, "https://fill-data.papermc.io/v1/objects/abc/paper-1.21.4-232.jar");
+  assert.equal(r.filename, "paper-1.21.4-232.jar");
 });
 
 test("purpur resolves direct url", async () => {
