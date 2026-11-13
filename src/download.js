@@ -6,13 +6,41 @@ const PAPER = "https://fill.papermc.io/v3/projects/paper/versions";
 const PURPUR = "https://api.purpurmc.org/v2/purpur";
 const MANIFEST = "https://piston-meta.mojang.com/mc/game/version_manifest_v2.json";
 
-async function resolveDownload(meta, fetchFn) {
+async function fetchJson(url, { fetchFn, tries = 3, timeoutMs = 20000, retryDelayMs = 800 } = {}) {
   const f = fetchFn || fetch;
+  let lastErr = null;
+  for (let i = 0; i < tries; i++) {
+    if (i > 0) await new Promise((r) => setTimeout(r, retryDelayMs * i));
+    try {
+      const res = await Promise.race([
+        f(url, { signal: AbortSignal.timeout(timeoutMs) }),
+        new Promise((_, rej) => setTimeout(() => rej(Object.assign(new Error(`官方 API 请求超时 (${timeoutMs}ms)`), { name: "TimeoutError" })), timeoutMs)),
+      ]);
+      if (!res.ok) throw new Error(`官方 API 响应异常: HTTP ${res.status}`);
+      const ct = res.headers && res.headers.get && res.headers.get("content-type");
+      if (ct && !/json/i.test(ct)) {
+        const body = await res.text().catch(() => "");
+        throw new Error(`官方 API 返回了非 JSON 数据 (HTTP ${res.status}${ct ? ", " + ct : ""})，可能被网络拦截`);
+      }
+      try {
+        return await res.json();
+      } catch (pe) {
+        throw new Error(`官方 API 返回了无法解析的 JSON (HTTP ${res.status})，可能是响应被截断或网络中断`);
+      }
+    } catch (e) {
+      const msg = String(e.message || e);
+      if (/非 JSON 数据/.test(msg)) throw e;
+      if (e.name === "TimeoutError" || /timeout|timed out/i.test(msg)) lastErr = new Error(`官方 API 请求超时 (${timeoutMs}ms): ${url}`);
+      else lastErr = e instanceof Error && e.message ? e : new Error(msg);
+    }
+  }
+  throw lastErr;
+}
+
+async function resolveDownload(meta, fetchFn) {
   if (meta.vendor === "paper") {
     const v = meta.version;
-    const res = await f(`${PAPER}/${v}/builds`);
-    if (!res.ok) throw new Error(`Paper 获取构建失败: HTTP ${res.status}`);
-    const builds = await res.json();
+    const builds = await fetchJson(`${PAPER}/${v}/builds`, { fetchFn });
     const build = Array.isArray(builds) ? builds[builds.length - 1] : null;
     const dl = build && build.downloads && build.downloads["server:default"];
     if (!dl || !dl.url) throw new Error("Paper 未找到可用构建下载");
@@ -24,9 +52,7 @@ async function resolveDownload(meta, fetchFn) {
   }
   if (meta.vendor === "fabric") {
     const gv = meta.version;
-    const res = await f(`https://meta.fabricmc.net/v2/versions/loader/${gv}`);
-    if (!res.ok) throw new Error(`Fabric 获取加载器失败: HTTP ${res.status}`);
-    const list = await res.json();
+    const list = await fetchJson(`https://meta.fabricmc.net/v2/versions/loader/${gv}`, { fetchFn });
     const top = Array.isArray(list) ? list[0] : null;
     const loader = top && top.loader && top.loader.version;
     const inter = top && top.intermediary && top.intermediary.version;
@@ -38,9 +64,7 @@ async function resolveDownload(meta, fetchFn) {
   }
   if (meta.vendor === "purpur") {
     const v = meta.version;
-    const res = await f(`${PURPUR}/${v}/latest`);
-    if (!res.ok) throw new Error(`Purpur 获取元数据失败: HTTP ${res.status}`);
-    const metaJson = await res.json();
+    const metaJson = await fetchJson(`${PURPUR}/${v}/latest`, { fetchFn });
     if (!metaJson.md5) throw new Error("Purpur 未返回 md5 校验值");
     return {
       url: `${PURPUR}/${v}/latest/download`,
@@ -50,11 +74,12 @@ async function resolveDownload(meta, fetchFn) {
   }
   if (meta.vendor === "vanilla") {
     const v = meta.version;
-    const manifest = await (await f(MANIFEST)).json();
+    const manifest = await fetchJson(MANIFEST, { fetchFn });
     const release = manifest.latest.release;
     const want = v === "latest" || !v ? release : v;
     const ver = manifest.versions.find((x) => x.id === want);
-    const vres = await (await f(ver.url)).json();
+    if (!ver) throw new Error(`原版未找到版本: ${want}`);
+    const vres = await fetchJson(ver.url, { fetchFn });
     if (!vres.downloads || !vres.downloads.server) throw new Error(`原版版本无服务端下载: ${want}`);
     return {
       url: vres.downloads.server.url,
@@ -129,30 +154,21 @@ function vcmp(a, b) {
 }
 
 async function listVersions(vendor, fetchFn) {
-  const f = fetchFn || fetch;
   if (vendor === "paper") {
-    const res = await f("https://fill.papermc.io/v3/projects/paper");
-    if (!res.ok) throw new Error(`Paper 获取版本失败: HTTP ${res.status}`);
-    const data = await res.json();
+    const data = await fetchJson("https://fill.papermc.io/v3/projects/paper", { fetchFn });
     const flat = Object.values(data.versions || {}).flat();
     return [...new Set(flat.filter((v) => !/(rc|pre|snapshot|alpha|beta)/i.test(v)))].sort(vcmp);
   }
   if (vendor === "purpur") {
-    const res = await f("https://api.purpurmc.org/v2/purpur");
-    if (!res.ok) throw new Error(`Purpur 获取版本失败: HTTP ${res.status}`);
-    const data = await res.json();
+    const data = await fetchJson("https://api.purpurmc.org/v2/purpur", { fetchFn });
     return (data.versions || []).slice().sort(vcmp);
   }
   if (vendor === "fabric") {
-    const res = await f("https://meta.fabricmc.net/v2/versions/game");
-    if (!res.ok) throw new Error(`Fabric 获取版本失败: HTTP ${res.status}`);
-    const list = await res.json();
+    const list = await fetchJson("https://meta.fabricmc.net/v2/versions/game", { fetchFn });
     return (list || []).filter((g) => g.stable).map((g) => g.version).sort(vcmp);
   }
   if (vendor === "vanilla") {
-    const res = await f(MANIFEST);
-    if (!res.ok) throw new Error(`原版获取版本失败: HTTP ${res.status}`);
-    const data = await res.json();
+    const data = await fetchJson(MANIFEST, { fetchFn });
     return (data.versions || [])
       .filter((v) => v.type === "release" && vcmp(v.id, "1.2.5") <= 0)
       .map((v) => v.id)
@@ -161,4 +177,4 @@ async function listVersions(vendor, fetchFn) {
   throw new Error("未知下载源");
 }
 
-module.exports = { resolveDownload, downloadFile, listVersions };
+module.exports = { resolveDownload, downloadFile, listVersions, fetchJson };

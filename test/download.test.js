@@ -3,7 +3,7 @@ const assert = require("node:assert");
 const fs = require("node:fs");
 const path = require("node:path");
 const { makeTmpDir } = require("./helpers/tmp.js");
-const { resolveDownload, downloadFile, listVersions } = require("../src/download.js");
+const { resolveDownload, downloadFile, listVersions, fetchJson } = require("../src/download.js");
 
 function fakeFetch(map) {
   return async (url) => {
@@ -12,6 +12,46 @@ function fakeFetch(map) {
     return hit;
   };
 }
+
+test("fetchJson retries transient network errors and 5xx, then succeeds", async () => {
+  let calls = 0;
+  const flaky = async (url) => {
+    calls++;
+    if (calls < 3) throw Object.assign(new Error("fetch failed"), { cause: { code: "ECONNRESET" } });
+    return { ok: true, status: 200, json: async () => ({ hello: 1 }) };
+  };
+  const data = await fetchJson("https://x/api", { fetchFn: flaky });
+  assert.deepEqual(data, { hello: 1 });
+  assert.equal(calls, 3);
+});
+
+test("fetchJson throws clear error on non-JSON body (no raw 'Unexpected token')", async () => {
+  const html = async () => ({ ok: true, status: 200, headers: { get: (k) => (k === "content-type" ? "text/html" : null) }, text: async () => "<html>blocked</html>" });
+  await assert.rejects(() => fetchJson("https://x/api", { fetchFn: html }), /非 JSON|官方/);
+});
+
+test("fetchJson rejects after exhausting retries", async () => {
+  let calls = 0;
+  const alwaysFail = async () => { calls++; throw new Error("fetch failed"); };
+  await assert.rejects(() => fetchJson("https://x/api", { fetchFn: alwaysFail, tries: 2, retryDelayMs: 1 }), /fetch failed/);
+  assert.equal(calls, 2);
+});
+
+test("fetchJson honors timeout option", async () => {
+  const slow = () => new Promise(() => {});
+  await assert.rejects(() => fetchJson("https://x/api", { fetchFn: slow, timeoutMs: 30, tries: 1, retryDelayMs: 1 }), /超时/);
+});
+
+test("listVersions survives one transient failure via retry", async () => {
+  let calls = 0;
+  const flaky = async (url) => {
+    calls++;
+    if (calls === 1) throw new Error("fetch failed");
+    return { ok: true, status: 200, json: async () => ({ versions: ["1.21.4", "1.21.5", "1.20.6"] }) };
+  };
+  const list = await listVersions("paper", flaky);
+  assert.deepEqual(list, ["1.21.5", "1.21.4", "1.20.6"]);
+});
 
 test("paper resolves latest build download url (fill API v3)", async () => {
   const fetchFn = fakeFetch({
