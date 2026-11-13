@@ -10,8 +10,6 @@ const { getConnection, setConnection } = require("./connections.js");
 const { listPlayers, addPlayer, setAdmin, setBanned, setPlayerPassword, removePlayer } = require("./players.js");
 const { listVersions } = require("./download.js");
 
-const WEB_ROOT = path.join(__dirname, "..");
-
 function json(res, code, obj) {
   const body = JSON.stringify(obj);
   res.writeHead(code, { "Content-Type": "application/json; charset=utf-8" });
@@ -40,7 +38,8 @@ function mime(p) {
   return { ".html": "text/html", ".css": "text/css", ".js": "text/javascript", ".svg": "image/svg+xml", ".jpg": "image/jpeg", ".png": "image/png", ".json": "application/json", ".ico": "image/x-icon" }[ext] || "application/octet-stream";
 }
 
-function createApp({ dataDir, manager, downloader, listVersions: listVersionsFn }) {
+function createApp({ dataDir, manager, downloader, listVersions: listVersionsFn, staticRoot }) {
+  const WEB_ROOT = staticRoot || path.join(__dirname, "..");
   return http.createServer(async (req, res) => {
     try {
       const url = new URL(req.url, "http://x");
