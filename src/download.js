@@ -45,6 +45,7 @@ async function resolveDownload(meta, fetchFn) {
     const want = v === "latest" || !v ? release : v;
     const ver = manifest.versions.find((x) => x.id === want);
     const vres = await (await f(ver.url)).json();
+    if (!vres.downloads || !vres.downloads.server) throw new Error(`原版版本无服务端下载: ${want}`);
     return {
       url: vres.downloads.server.url,
       filename: "server.jar",
@@ -77,4 +78,47 @@ async function downloadFile(url, dest, fetchFn, onProgress) {
   return total;
 }
 
-module.exports = { resolveDownload, downloadFile };
+function vcmp(a, b) {
+  const pa = String(a).split(".").map(Number);
+  const pb = String(b).split(".").map(Number);
+  for (let i = 0; i < 3; i++) {
+    const d = (pb[i] || 0) - (pa[i] || 0);
+    if (d) return d;
+  }
+  return 0;
+}
+
+async function listVersions(vendor, fetchFn) {
+  const f = fetchFn || fetch;
+  if (vendor === "paper") {
+    const res = await f("https://fill.papermc.io/v3/projects/paper");
+    if (!res.ok) throw new Error(`Paper 获取版本失败: HTTP ${res.status}`);
+    const data = await res.json();
+    const flat = Object.values(data.versions || {}).flat();
+    return [...new Set(flat.filter((v) => !/(rc|pre|snapshot|alpha|beta)/i.test(v)))].sort(vcmp);
+  }
+  if (vendor === "purpur") {
+    const res = await f("https://api.purpurmc.org/v2/purpur");
+    if (!res.ok) throw new Error(`Purpur 获取版本失败: HTTP ${res.status}`);
+    const data = await res.json();
+    return (data.versions || []).slice().sort(vcmp);
+  }
+  if (vendor === "fabric") {
+    const res = await f("https://meta.fabricmc.net/v2/versions/game");
+    if (!res.ok) throw new Error(`Fabric 获取版本失败: HTTP ${res.status}`);
+    const list = await res.json();
+    return (list || []).filter((g) => g.stable).map((g) => g.version).sort(vcmp);
+  }
+  if (vendor === "vanilla") {
+    const res = await f(MANIFEST);
+    if (!res.ok) throw new Error(`原版获取版本失败: HTTP ${res.status}`);
+    const data = await res.json();
+    return (data.versions || [])
+      .filter((v) => v.type === "release" && vcmp(v.id, "1.2.5") <= 0)
+      .map((v) => v.id)
+      .sort(vcmp);
+  }
+  throw new Error("未知下载源");
+}
+
+module.exports = { resolveDownload, downloadFile, listVersions };

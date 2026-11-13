@@ -3,7 +3,7 @@ const assert = require("node:assert");
 const fs = require("node:fs");
 const path = require("node:path");
 const { makeTmpDir } = require("./helpers/tmp.js");
-const { resolveDownload, downloadFile } = require("../src/download.js");
+const { resolveDownload, downloadFile, listVersions } = require("../src/download.js");
 
 function fakeFetch(map) {
   return async (url) => {
@@ -68,6 +68,49 @@ test("plugin downloads from direct url", async () => {
 test("plugin derives filename from url last segment (cross-platform)", async () => {
   const r = await resolveDownload({ vendor: "plugin", url: "https://example.com/plugins/LuckPerms.jar?x=1" }, fakeFetch({}));
   assert.equal(r.filename, "LuckPerms.jar");
+});
+
+test("listVersions paper dedupes + drops previews, sorted desc", async () => {
+  const fetchFn = fakeFetch({
+    "https://fill.papermc.io/v3/projects/paper": {
+      ok: true, json: async () => ({ versions: { "1.21": ["1.21.4", "1.21.4-rc1", "1.21.1"], "1.20": ["1.20.4"] } }),
+    },
+  });
+  const v = await listVersions("paper", fetchFn);
+  assert.deepEqual(v, ["1.21.4", "1.21.1", "1.20.4"]);
+});
+
+test("listVersions purpur from /v2/purpur", async () => {
+  const fetchFn = fakeFetch({
+    "https://api.purpurmc.org/v2/purpur": { ok: true, json: async () => ({ versions: ["1.20.4", "1.21.4", "1.20.1"] }) },
+  });
+  const v = await listVersions("purpur", fetchFn);
+  assert.deepEqual(v, ["1.21.4", "1.20.4", "1.20.1"]);
+});
+
+test("listVersions fabric stable only", async () => {
+  const fetchFn = fakeFetch({
+    "https://meta.fabricmc.net/v2/versions/game": {
+      ok: true, json: async () => [{ version: "1.21.4", stable: true }, { version: "26.4-snapshot-8", stable: false }],
+    },
+  });
+  const v = await listVersions("fabric", fetchFn);
+  assert.deepEqual(v, ["1.21.4"]);
+});
+
+test("listVersions vanilla release >=1.2.5 (server jar era)", async () => {
+  const fetchFn = fakeFetch({
+    "https://piston-meta.mojang.com/mc/game/version_manifest_v2.json": {
+      ok: true, json: async () => ({ versions: [
+        { id: "1.21.4", type: "release" },
+        { id: "1.2.4", type: "release" },
+        { id: "1.0", type: "release" },
+        { id: "26.4-snapshot-8", type: "snapshot" },
+      ] }),
+    },
+  });
+  const v = await listVersions("vanilla", fetchFn);
+  assert.deepEqual(v, ["1.21.4"]);
 });
 
 test("downloadFile writes bytes with progress", async () => {

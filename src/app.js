@@ -8,6 +8,7 @@ const { loadMasterKey } = require("./crypto.js");
 const { getBackend } = require("./files.js");
 const { getConnection, setConnection } = require("./connections.js");
 const { listPlayers, addPlayer, setAdmin, setBanned, setPlayerPassword, removePlayer } = require("./players.js");
+const { listVersions } = require("./download.js");
 
 const WEB_ROOT = path.join(__dirname, "..");
 
@@ -39,7 +40,7 @@ function mime(p) {
   return { ".html": "text/html", ".css": "text/css", ".js": "text/javascript", ".svg": "image/svg+xml", ".jpg": "image/jpeg", ".png": "image/png", ".json": "application/json", ".ico": "image/x-icon" }[ext] || "application/octet-stream";
 }
 
-function createApp({ dataDir, manager, downloader }) {
+function createApp({ dataDir, manager, downloader, listVersions: listVersionsFn }) {
   return http.createServer(async (req, res) => {
     try {
       const url = new URL(req.url, "http://x");
@@ -163,6 +164,16 @@ function createApp({ dataDir, manager, downloader }) {
           if (req.method === "PUT") {
             const body = await readBody(req);
             return json(res, 200, updateServer(dataDir, sm[1], body));
+          }
+        }
+        if (p === "/api/download/versions" && req.method === "GET") {
+          if (!verifyToken(dataDir, tokenFrom(req))) return json(res, 401, { error: "未登录" });
+          const vendor = url.searchParams.get("vendor") || "";
+          try {
+            const fn = listVersionsFn || listVersions;
+            return json(res, 200, await fn(vendor));
+          } catch (e) {
+            return json(res, 500, { error: String(e.message || e) });
           }
         }
         if (p === "/api/players" && req.method === "GET") {

@@ -109,11 +109,16 @@
   async function getVersions(coreKey) {
     if (versionCache[coreKey]) return versionCache[coreKey];
     try {
-      versionCache[coreKey] = await CORES[coreKey].load();
+      const list = await window.api("/api/download/versions?vendor=" + coreKey);
+      if (Array.isArray(list) && list.length) {
+        versionCache[coreKey] = sortDesc(list.filter((v) => ge(v, "1.8")));
+        return versionCache[coreKey];
+      }
+      throw new Error("empty");
     } catch (e) {
       versionCache[coreKey] = CORES[coreKey].versions;
+      return versionCache[coreKey];
     }
-    return versionCache[coreKey];
   }
 
   // ---- tabs ----
